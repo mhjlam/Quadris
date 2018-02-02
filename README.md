@@ -1,15 +1,17 @@
 # Quadris
 
-An unfinished Tetris clone.
+An unfinished Tetris game.
 
-## TODO
+<img src="Quadris.png" width="320">
+
+## More stuff to add
 
 - Wall kick
 - Score (line clears, time-based multiplier)
-- Gravity  (levels)
+- Speeding up gravity over time (levels)
 - Title screen (play / exit / highscores)
-- Improved overlay (better boxes)
-- Improved graphics (better looking tetrominoes)
+- Add preview box to overlay
 - Keep track of highscores
-- Dynamic grid size
+- Dynamic window and grid sizes
 - Optimization (i.e. for tetromino rotation)
+- Improved graphics (better looking tetrominoes and overlay)
