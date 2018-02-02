@@ -4,7 +4,7 @@ An unfinished Tetris game.
 
 <img src="Quadris.png" width="320">
 
-## More stuff to add
+## More stuff to be added
 
 - Wall kick
 - Score (line clears, time-based multiplier)
