@@ -6,7 +6,6 @@ An unfinished Tetris game.
 
 ## More stuff to add
 
-- Add box around preview piece to overlay
 - Improved controls (down button hold for falling)
 - Score (line clears, time-based multiplier)
 - Speeding up gravity over time (levels)
