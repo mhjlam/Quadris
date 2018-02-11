@@ -205,7 +205,7 @@ namespace Quadris
 		{
 			Tetromino tetromino = new Tetromino();
 
-			switch (random.Next(0, 6))
+			switch (random.Next(0, 7))
 			{
 				case 0: tetromino = new I(); break;
 				case 1: tetromino = new J(); break;
@@ -227,7 +227,7 @@ namespace Quadris
 				piece = GenerateRandomPiece();
 
 				// Generate random rotation
-				for (int i = 0; i < random.Next(0, 3); ++i)
+				for (int i = 0; i < random.Next(0, 4); ++i)
 				{
 					piece.Tiles = piece.Rotate();
 				}
@@ -268,7 +268,7 @@ namespace Quadris
 			nextPiece = GenerateRandomPiece();
 
 			// Generate random rotation
-			for (int i = 0; i < random.Next(0, 3); ++i)
+			for (int i = 0; i < random.Next(0, 4); ++i)
 			{
 				nextPiece.Tiles = nextPiece.Rotate();
 			}
@@ -281,7 +281,7 @@ namespace Quadris
 		{
 			DrawWell();
 			DrawTetromino(piece);
-			DrawTetromino(nextPiece);
+			DrawPreview();
 		}
 
 		private void DrawWell()
@@ -303,11 +303,23 @@ namespace Quadris
 			}
 		}
 
+		private void DrawPreview()
+		{
+			int padding = 10;
+			int offset = (Constants.TileSize * Constants.PieceTiles / 2) - padding;
+
+			int x = Constants.WellCenterX - (Constants.TileSize * (Constants.WellWidth / 2)) + (nextPiece.X - Constants.PieceTiles / 2) * Constants.TileSize;
+			int y = Constants.WellCenterY - (Constants.TileSize * (Constants.WellHeight / 2)) + (nextPiece.Y - Constants.PieceTiles / 2) * Constants.TileSize;
+
+			DrawRectangle(x, y, x + Constants.PieceTiles * Constants.TileSize, y + Constants.PieceTiles * Constants.TileSize, Color.White, false);
+			DrawTetromino(nextPiece);
+		}
+
 		private void DrawTetromino(Tetromino tetromino)
 		{
 			// Position of the tile to draw
-			int x = (Constants.WellCenterX - (Constants.TileSize * (Constants.WellWidth / 2))) + ((tetromino.X - Constants.PieceTiles / 2) * Constants.TileSize);
-			int y = (Constants.WellCenterY - (Constants.TileSize * (Constants.WellHeight / 2))) + ((tetromino.Y - Constants.PieceTiles / 2) * Constants.TileSize);
+			int x = Constants.WellCenterX - (Constants.TileSize * (Constants.WellWidth / 2)) + (tetromino.X - Constants.PieceTiles / 2) * Constants.TileSize;
+			int y = Constants.WellCenterY - (Constants.TileSize * (Constants.WellHeight / 2)) + (tetromino.Y - Constants.PieceTiles / 2) * Constants.TileSize;
 			
 			// Draw filled tiles
 			for (int py = 0; py < Constants.PieceTiles; py++)
