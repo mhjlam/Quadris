@@ -126,11 +126,37 @@ namespace Quadris
 
 			if (newState.IsKeyDown(Keys.Z) && !prevKeyState.IsKeyDown(Keys.Z))
 			{
-				int[,] rotatedTiles = piece.RotateCW();
+				int[,] rotatedTiles = piece.Rotate2();
 
+				// attempt rotation as-is
 				if (!well.Collision(piece.X, piece.Y, rotatedTiles))
 				{
 					piece.Tiles = rotatedTiles;
+				}
+				// attempt wall kick right before rotation
+				else if (!well.Collision(piece.X + 1, piece.Y, rotatedTiles))
+				{
+					piece.X++;
+					piece.Tiles = rotatedTiles;
+				}
+				// attempt wall kick left before rotation
+				else if (!well.Collision(piece.X - 1, piece.Y, rotatedTiles))
+				{
+					piece.X--;
+					piece.Tiles = rotatedTiles;
+				}
+				// specific test for newly spawned piece
+				else if (piece.Y <= Constants.PieceTiles / 2)
+				{
+					for (int y = piece.Y; y < Constants.PieceTiles; ++y)
+					{
+						if (!well.Collision(piece.X, y, rotatedTiles))
+						{
+							piece.Y += y;
+							piece.Tiles = rotatedTiles;
+							break;
+						}
+					}
 				}
 			}
 
@@ -175,24 +201,35 @@ namespace Quadris
 			}
 		}
 
+		private Tetromino GenerateRandomPiece()
+		{
+			Tetromino tetromino = new Tetromino();
+
+			switch (random.Next(0, 6))
+			{
+				case 0: tetromino = new I(); break;
+				case 1: tetromino = new J(); break;
+				case 2: tetromino = new L(); break;
+				case 3: tetromino = new O(); break;
+				case 4: tetromino = new S(); break;
+				case 5: tetromino = new T(); break;
+				case 6: tetromino = new Z(); break;
+			}
+
+			return tetromino;
+		}
+
 		private void SpawnPiece(bool first = false)
 		{
 			if (first)
 			{
-				switch ((TetrominoType)random.Next(0, 6))
-				{
-					case TetrominoType.I: piece = new I(); break;
-					case TetrominoType.J: piece = new J(); break;
-					case TetrominoType.L: piece = new L(); break;
-					case TetrominoType.O: piece = new O(); break;
-					case TetrominoType.S: piece = new S(); break;
-					case TetrominoType.T: piece = new T(); break;
-					case TetrominoType.Z: piece = new Z(); break;
-				}
+				// Generate random piece type
+				piece = GenerateRandomPiece();
 
+				// Generate random rotation
 				for (int i = 0; i < random.Next(0, 3); ++i)
 				{
-					piece.Tiles = piece.RotateCCW();
+					piece.Tiles = piece.Rotate();
 				}
 			}
 			else
@@ -201,38 +238,43 @@ namespace Quadris
 			}
 
 			piece.X = Constants.WellWidth / 2;
-			piece.Y = -(Constants.PieceTiles / 2);
+			piece.Y = 0;
 
-			// Calculate clearance space
-			while (well.Collision(piece.X, piece.Y, piece.Tiles))
+			// Calculate vertical clearance space
+			for (int y = 0; y <= Constants.PieceTiles / 2; ++y)
 			{
-				piece.Y++;
+				// if sum of row > 0
+				int sum = 0;
+				for (int x = 0; x < Constants.PieceTiles; ++x)
+				{
+					sum += piece.Tiles[y, x];
+					if (sum > 0) break;
+				}
+
+				if (sum > 0)
+				{
+					piece.Y += Math.Abs((Constants.PieceTiles / 2) - y);
+					break;
+				}
 			}
 
-			switch ((TetrominoType)random.Next(0, 6))
-			{
-				case TetrominoType.I: nextPiece = new I(); break;
-				case TetrominoType.J: nextPiece = new J(); break;
-				case TetrominoType.L: nextPiece = new L(); break;
-				case TetrominoType.O: nextPiece = new O(); break;
-				case TetrominoType.S: nextPiece = new S(); break;
-				case TetrominoType.T: nextPiece = new T(); break;
-				case TetrominoType.Z: nextPiece = new Z(); break;
-			}
-
-			// Generate random rotation
-			for (int i = 0; i < random.Next(0, 3); ++i)
-			{
-				nextPiece.Tiles = nextPiece.RotateCCW();
-			}
-
-			nextPiece.X = Constants.WellWidth + 5;
-			nextPiece.Y = 5;
-
+			// Fail state occurs when there is no space to spawn next piece
 			if (well.Collision(piece.X, piece.Y, piece.Tiles))
 			{
 				Exit();
 			}
+
+			// Generate random piece type
+			nextPiece = GenerateRandomPiece();
+
+			// Generate random rotation
+			for (int i = 0; i < random.Next(0, 3); ++i)
+			{
+				nextPiece.Tiles = nextPiece.Rotate();
+			}
+
+			nextPiece.X = Constants.WellWidth + 5;
+			nextPiece.Y = 5;
 		}
 
 		private void DrawScene()

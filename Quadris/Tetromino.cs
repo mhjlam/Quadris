@@ -2,11 +2,6 @@
 
 namespace Quadris
 {
-	public enum TetrominoType
-	{
-		I, J, L, O, S, T, Z
-	}
-
 	public class Tetromino
 	{
 		public int X;
@@ -14,37 +9,13 @@ namespace Quadris
 
 		public Color Color;
 		public int[,] Tiles;
-		public TetrominoType Type;
 
 		public Tetromino()
 		{
 			Color = new Color(0xFFFFFF);
 		}
 
-		public virtual int[,] RotateCW()
-		{
-			if (Tiles == null || Tiles.Length == 0) return Tiles;
-
-			int rows = Tiles.GetLength(0);
-			int cols = Tiles.GetLength(1);
-
-			if (rows != cols) return Tiles;
-
-			// r1 = c0
-			// c1 = cols-1 - r0
-			int[,] rotatedTiles = new int[rows, cols];
-			for (int c = 0; c < cols; ++c)
-			{
-				for (int r = 0; r < rows; ++r)
-				{
-					rotatedTiles[c, cols - 1 - r] = Tiles[r, c];
-				}
-			}
-
-			return rotatedTiles;
-		}
-
-		public virtual int[,] RotateCCW()
+		public virtual int[,] Rotate()
 		{
 			if (Tiles == null || Tiles.Length == 0) return Tiles;
 
@@ -66,13 +37,35 @@ namespace Quadris
 
 			return rotatedTiles;
 		}
+
+		public virtual int[,] Rotate2() // rotate clockwise (unused)
+		{
+			if (Tiles == null || Tiles.Length == 0) return Tiles;
+
+			int rows = Tiles.GetLength(0);
+			int cols = Tiles.GetLength(1);
+
+			if (rows != cols) return Tiles;
+
+			// r1 = c0
+			// c1 = cols-1 - r0
+			int[,] rotatedTiles = new int[rows, cols];
+			for (int c = 0; c < cols; ++c)
+			{
+				for (int r = 0; r < rows; ++r)
+				{
+					rotatedTiles[c, cols - 1 - r] = Tiles[r, c];
+				}
+			}
+
+			return rotatedTiles;
+		}
 	}
 
 	public class I : Tetromino
 	{
 		public I()
 		{
-			Type = TetrominoType.I;
 			Color = new Color(0xFFFF00);
 
 			Tiles = new int[5, 5]
@@ -94,7 +87,6 @@ namespace Quadris
 	{
 		public J()
 		{
-			Type = TetrominoType.J;
 			Color = new Color(0xFF0000);
 
 			Tiles = new int[5, 5]
@@ -114,7 +106,6 @@ namespace Quadris
 	{
 		public L()
 		{
-			Type = TetrominoType.L;
 			Color = new Color(0x00A5FF);
 
 			Tiles = new int[5, 5]
@@ -134,7 +125,6 @@ namespace Quadris
 	{
 		public O()
 		{
-			Type = TetrominoType.O;
 			Color = new Color(0x00FFFF);
 
 			Tiles = new int[5, 5]
@@ -149,13 +139,13 @@ namespace Quadris
 			// 0x22, 0x23, 0x32, 0x33
 		}
 
-		// disallow rotating
-		public override int[,] RotateCW()
+		// disable rotating for the O piece
+		public override int[,] Rotate()
 		{
 			return Tiles;
 		}
 
-		public override int[,] RotateCCW()
+		public override int[,] Rotate2()
 		{
 			return Tiles;
 		}
@@ -165,7 +155,6 @@ namespace Quadris
 	{
 		public S()
 		{
-			Type = TetrominoType.S;
 			Color = new Color(0x00FF00);
 
 			Tiles = new int[5, 5]
@@ -183,7 +172,6 @@ namespace Quadris
 	{
 		public T()
 		{
-			Type = TetrominoType.T;
 			Color = new Color(0xFF00FF);
 
 			Tiles = new int[5, 5]
@@ -201,7 +189,6 @@ namespace Quadris
 	{
 		public Z()
 		{
-			Type = TetrominoType.Z;
 			Color = new Color(0x0000FF);
 
 			Tiles = new int[5, 5]
