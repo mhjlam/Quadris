@@ -6,9 +6,9 @@ An unfinished Tetris game.
 
 ## More stuff to add
 
-- Improved controls (down button hold for falling)
-- Score (line clears, time-based multiplier)
-- Speeding up gravity over time (levels)
+- Improved controls (hold down button for slow drop)
+- Score: line clear & time-based multipliers
+- Level: speed up gravity over time
 - Title screen (play / exit)
 - Keep track of highscores
 - Adjustable window resolution and well size
