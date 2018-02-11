@@ -82,10 +82,9 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Grid.cs" />
+    <Compile Include="Well.cs" />
     <Compile Include="Quadris.cs" />
     <Compile Include="Tetromino.cs" />
-    <Compile Include="Pieces.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

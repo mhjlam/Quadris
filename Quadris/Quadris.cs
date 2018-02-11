@@ -7,61 +7,49 @@ namespace Quadris
 {
 	public class Constants
 	{
-		public const int SCREEN_WIDTH = 640;
-		public const int SCREEN_HEIGHT = 480;
+		public const int ScreenWidth = 640;
+		public const int ScreenHeight = 480;
 
-		public const int PIECE_TILES = 5;		            // Number of horizontal and vertical tiles of a matrix piece
-		public const int TILE_SIZE = 16;		            // Width and height of each tile of a piece
+		public const int PieceTiles = 5;
+		public const int TileSize = 16;
 
-		public const int GRID_WIDTH = 10;		            // Board width in tiles
-		public const int GRID_HEIGHT = 20;		            // Board height in tiles
-		public const int BOARD_CENTER_X = SCREEN_WIDTH / 2;	// Center position of the board from the left of the screen
-		public const int BOARD_CENTER_Y = SCREEN_HEIGHT/2;  // Center position of the board from the top of the screen
+		public const int WellWidth = 10;
+		public const int WellHeight = 20;
+		public const int WellCenterX = ScreenWidth / 2;
+		public const int WellCenterY = ScreenHeight / 2;
 
-		public const int BOARD_LEFT = BOARD_CENTER_X - (GRID_WIDTH * TILE_SIZE / 2);
-		public const int BOARD_RIGHT = BOARD_CENTER_X + (GRID_WIDTH * TILE_SIZE / 2);
-		public const int BOARD_TOP = BOARD_CENTER_Y - (GRID_HEIGHT * TILE_SIZE / 2);
-		public const int BOARD_BOTTOM = BOARD_CENTER_Y + (GRID_HEIGHT * TILE_SIZE / 2);
-
-		public const int BOARD_LINE_WIDTH = 6;              // Width in pixels of the board boundaries
+		public const int WellLeft = WellCenterX - (WellWidth * TileSize / 2);
+		public const int WellRight = WellCenterX + (WellWidth * TileSize / 2);
+		public const int WellTop = WellCenterY - (WellHeight * TileSize / 2);
+		public const int WellBottom = WellCenterY + (WellHeight * TileSize / 2);
 	}
 
 	public class Quadris : Game
 	{
-		GraphicsDeviceManager graphics;
+		GraphicsDeviceManager graphicsDevice;
 		SpriteBatch spriteBatch;
-		KeyboardState oldState;
-		Texture2D surface;
+		Texture2D tileSurface;
 
-		Grid grid;
-		Tetromino thisPiece;
-		Tetromino nextPiece;
+		KeyboardState prevKeyState = Keyboard.GetState();
 
-		Random random;
-		TimeSpan gravityTime;
-		TimeSpan elapsedTime;
+		Random random = new Random();
+		TimeSpan gravityTime = TimeSpan.FromSeconds(1.0);
+		TimeSpan elapsedTime = TimeSpan.Zero;
 
+		Well well = new Well();
+		Tetromino piece = new Tetromino();
+		Tetromino nextPiece = new Tetromino();
 
 		public Quadris()
 		{
 			Content.RootDirectory = "Content";
 
-			graphics = new GraphicsDeviceManager(this)
+			graphicsDevice = new GraphicsDeviceManager(this)
 			{
 				IsFullScreen = false,
-				PreferredBackBufferWidth = Constants.SCREEN_WIDTH,
-				PreferredBackBufferHeight = Constants.SCREEN_HEIGHT
+				PreferredBackBufferWidth = Constants.ScreenWidth,
+				PreferredBackBufferHeight = Constants.ScreenHeight
 			};
-
-			oldState = Keyboard.GetState();
-
-			grid = new Grid();
-			thisPiece = new Tetromino();
-			nextPiece = new Tetromino();
-
-			random = new Random();
-			gravityTime = TimeSpan.FromSeconds(1.0);
-			elapsedTime = TimeSpan.Zero;
 		}
 
 		protected override void Initialize()
@@ -76,13 +64,12 @@ namespace Quadris
 		protected override void LoadContent()
 		{
 			spriteBatch = new SpriteBatch(GraphicsDevice);
-			surface = new Texture2D(graphics.GraphicsDevice, 1, 1, false, SurfaceFormat.Color); // empty 1x1 color surface
+			tileSurface = new Texture2D(graphicsDevice.GraphicsDevice, 1, 1, false, SurfaceFormat.Color); // empty 1x1 color surface
 		}
 
 		protected override void UnloadContent()
 		{
-			surface.Dispose();
-
+			tileSurface.Dispose();
 			base.UnloadContent();
 		}
 
@@ -112,53 +99,58 @@ namespace Quadris
 			{
 				Exit();
 			}
-			else if (newState.IsKeyDown(Keys.Left) && !oldState.IsKeyDown(Keys.Left))
+			
+			if (newState.IsKeyDown(Keys.Left) && !prevKeyState.IsKeyDown(Keys.Left))
 			{
-				if (!grid.Collision(thisPiece.posx - 1, thisPiece.posy, thisPiece.type, thisPiece.rotation))
+				if (!well.Collision(piece.X - 1, piece.Y, piece.Tiles))
 				{
-					thisPiece.posx--;
+					piece.X--;
 				}
 			}
-			else if (newState.IsKeyDown(Keys.Right) && !oldState.IsKeyDown(Keys.Right))
+			else if (newState.IsKeyDown(Keys.Right) && !prevKeyState.IsKeyDown(Keys.Right))
 			{
-				if (!grid.Collision(thisPiece.posx + 1, thisPiece.posy, thisPiece.type, thisPiece.rotation))
+				if (!well.Collision(piece.X + 1, piece.Y, piece.Tiles))
 				{
-					thisPiece.posx++;
+					piece.X++;
 				}
 			}
-			else if (newState.IsKeyDown(Keys.Down) && !oldState.IsKeyDown(Keys.Down))
+			else if (newState.IsKeyDown(Keys.Down) && !prevKeyState.IsKeyDown(Keys.Down))
 			{
-				if (!grid.Collision(thisPiece.posx, thisPiece.posy + 1, thisPiece.type, thisPiece.rotation))
+				if (!well.Collision(piece.X, piece.Y + 1, piece.Tiles))
 				{
 					// Reset glide timer
 					elapsedTime = TimeSpan.Zero;
-					thisPiece.posy++;
+					piece.Y++;
 				}
 			}
 
-			if (newState.IsKeyDown(Keys.Z) && !oldState.IsKeyDown(Keys.Z))
+			if (newState.IsKeyDown(Keys.Z) && !prevKeyState.IsKeyDown(Keys.Z))
 			{
-				if (!grid.Collision(thisPiece.posx, thisPiece.posy, thisPiece.type, (thisPiece.rotation+1) % 4))
-					thisPiece.rotation = (thisPiece.rotation + 1) % 4; // modulo ensure it rolls over to 0 again
+				int[,] rotatedTiles = piece.RotateCW();
+
+				if (!well.Collision(piece.X, piece.Y, rotatedTiles))
+				{
+					piece.Tiles = rotatedTiles;
+				}
 			}
 
-			if (newState.IsKeyDown(Keys.X) && !oldState.IsKeyDown(Keys.X))
+			if (newState.IsKeyDown(Keys.X) && !prevKeyState.IsKeyDown(Keys.X))
 			{
 				// Drop piece
-				while (!grid.Collision(thisPiece.posx, thisPiece.posy, thisPiece.type, thisPiece.rotation))
+				while (!well.Collision(piece.X, piece.Y, piece.Tiles))
 				{
-					thisPiece.posy++;
+					piece.Y++;
 				}
-				
-				grid.StorePiece(thisPiece.posx, thisPiece.posy - 1, thisPiece.type, thisPiece.rotation);
-				grid.ClearLines();
+
+				well.StorePiece(piece.X, piece.Y - 1, piece);
+				well.ClearLines();
 
 				elapsedTime = TimeSpan.Zero;
 				SpawnPiece();
 			}
 
 			// Update keyboard state
-			oldState = newState;
+			prevKeyState = newState;
 		}
 
 		private void UpdatePiece(GameTime gameTime)
@@ -169,15 +161,15 @@ namespace Quadris
 			{
 				elapsedTime = TimeSpan.Zero;
 
-				if (!grid.Collision(thisPiece.posx, thisPiece.posy + 1, thisPiece.type, thisPiece.rotation))
+				if (!well.Collision(piece.X, piece.Y + 1, piece.Tiles))
 				{
-					thisPiece.posy++;
+					piece.Y++;
 				}
 				else
 				{
-					grid.StorePiece(thisPiece.posx, thisPiece.posy, thisPiece.type, thisPiece.rotation);
-					grid.ClearLines();
-					
+					well.StorePiece(piece.X, piece.Y, piece);
+					well.ClearLines();
+
 					SpawnPiece();
 				}
 			}
@@ -185,109 +177,133 @@ namespace Quadris
 
 		private void SpawnPiece(bool first = false)
 		{
-			thisPiece.type = (first) ? (Tetromino.Type)random.Next(0, 6) : nextPiece.type;
-			thisPiece.rotation = (first) ? random.Next(0, 3) : nextPiece.rotation;
-			thisPiece.posx = (Constants.GRID_WIDTH / 2) + Pieces.OriginX(thisPiece.type, thisPiece.rotation);
-			thisPiece.posy = Pieces.OriginY(thisPiece.type, thisPiece.rotation);
+			if (first)
+			{
+				switch ((TetrominoType)random.Next(0, 6))
+				{
+					case TetrominoType.I: piece = new I(); break;
+					case TetrominoType.J: piece = new J(); break;
+					case TetrominoType.L: piece = new L(); break;
+					case TetrominoType.O: piece = new O(); break;
+					case TetrominoType.S: piece = new S(); break;
+					case TetrominoType.T: piece = new T(); break;
+					case TetrominoType.Z: piece = new Z(); break;
+				}
 
-			nextPiece.type = (Tetromino.Type)random.Next(0, 6);
-			nextPiece.rotation = random.Next(0, 3);
-			nextPiece.posx = Constants.GRID_WIDTH + 5;
-			nextPiece.posy = 5;
+				for (int i = 0; i < random.Next(0, 3); ++i)
+				{
+					piece.Tiles = piece.RotateCCW();
+				}
+			}
+			else
+			{
+				piece = nextPiece;
+			}
 
-			if (grid.Collision(thisPiece.posx, thisPiece.posy, thisPiece.type, thisPiece.rotation))
+			piece.X = Constants.WellWidth / 2;
+			piece.Y = -(Constants.PieceTiles / 2);
+
+			// Calculate clearance space
+			while (well.Collision(piece.X, piece.Y, piece.Tiles))
+			{
+				piece.Y++;
+			}
+
+			switch ((TetrominoType)random.Next(0, 6))
+			{
+				case TetrominoType.I: nextPiece = new I(); break;
+				case TetrominoType.J: nextPiece = new J(); break;
+				case TetrominoType.L: nextPiece = new L(); break;
+				case TetrominoType.O: nextPiece = new O(); break;
+				case TetrominoType.S: nextPiece = new S(); break;
+				case TetrominoType.T: nextPiece = new T(); break;
+				case TetrominoType.Z: nextPiece = new Z(); break;
+			}
+
+			// Generate random rotation
+			for (int i = 0; i < random.Next(0, 3); ++i)
+			{
+				nextPiece.Tiles = nextPiece.RotateCCW();
+			}
+
+			nextPiece.X = Constants.WellWidth + 5;
+			nextPiece.Y = 5;
+
+			if (well.Collision(piece.X, piece.Y, piece.Tiles))
+			{
 				Exit();
+			}
 		}
 
 		private void DrawScene()
 		{
-			DrawBoard();
-			DrawPiece(thisPiece);
-			DrawPiece(nextPiece);
+			DrawWell();
+			DrawTetromino(piece);
+			DrawTetromino(nextPiece);
 		}
 
-		private void DrawBoard()
+		private void DrawWell()
 		{
-			Color color = Color.Red;
-
-			// Determine the bounds of the board (left, right, top, bottom)
-			int left = Constants.BOARD_LEFT - 1;
-			int right = Constants.BOARD_RIGHT;
-
-			int top = Constants.BOARD_TOP - 1;
-			int bottom = Constants.BOARD_BOTTOM;
-
 			// Draw board boundaries
-			DrawBorder(left, top, right, bottom, 1, Color.White);
-
-			left = left + 1;
+			DrawRectangle(Constants.WellLeft - 2, Constants.WellTop - 1, Constants.WellRight, Constants.WellBottom, Color.White, false);
 			
 			// Draw filled board tiles
-			for (int i = 0; i < Constants.GRID_WIDTH; i++)
+			for (int i = 0; i < Constants.WellWidth; i++)
 			{
-				for (int j = 0; j < Constants.GRID_HEIGHT; j++)
+				for (int j = 0; j < Constants.WellHeight; j++)
 				{
 					// Draw rectangle if tile is filled
-					if (!grid.TileFree(i, j))
-						DrawTile((left + i * Constants.TILE_SIZE), (top + j * Constants.TILE_SIZE), grid.TileColor(i, j));
+					if (well.Tile(i, j) != 0)
+					{
+						DrawTile((Constants.WellLeft - 1 + i * Constants.TileSize), (Constants.WellTop - 1 + j * Constants.TileSize), well.TileColor(i, j));
+					}
 				}
 			}
 		}
 
-		private void DrawPiece(Tetromino piece)
+		private void DrawTetromino(Tetromino tetromino)
 		{
 			// Position of the tile to draw
-			int x = (Constants.BOARD_CENTER_X - (Constants.TILE_SIZE * (Constants.GRID_WIDTH  / 2))) + (piece.posx * Constants.TILE_SIZE);
-			int y = (Constants.BOARD_CENTER_Y - (Constants.TILE_SIZE * (Constants.GRID_HEIGHT / 2))) + (piece.posy * Constants.TILE_SIZE);
+			int x = (Constants.WellCenterX - (Constants.TileSize * (Constants.WellWidth / 2))) + ((tetromino.X - Constants.PieceTiles / 2) * Constants.TileSize);
+			int y = (Constants.WellCenterY - (Constants.TileSize * (Constants.WellHeight / 2))) + ((tetromino.Y - Constants.PieceTiles / 2) * Constants.TileSize);
 			
 			// Draw filled tiles
-			for (int i = 0; i < Constants.PIECE_TILES; i++)
+			for (int py = 0; py < Constants.PieceTiles; py++)
 			{
-				for (int j = 0; j < Constants.PIECE_TILES; j++)
+				for (int px = 0; px < Constants.PieceTiles; px++)
 				{
-					//// Determine the color of the tile
-					//switch (Pieces.TileType(piece.type, piece.rotation, j, i))
-					//{
-					//    case 1: color = Color.Lime; break;
-					//    case 2: color = Color.Blue; break; // pivot
-					//}
-
-					if (Pieces.TileType(piece.type, piece.rotation, j, i) != 0)
-					{
-						DrawTile((x + i * Constants.TILE_SIZE), (y + j * Constants.TILE_SIZE), Tetromino.GetColor(piece.type));
-					}
+					if (tetromino.Tiles[px, py] == 0) continue;
+					DrawTile((x + py * Constants.TileSize), (y + px * Constants.TileSize), tetromino.Color);
 				}
 			}
 		}
 
 		private void DrawTile(int left, int top, Color color)
 		{
-			DrawRectangle(left, top, left + Constants.TILE_SIZE - 1, top + Constants.TILE_SIZE - 1, color);
+			DrawRectangle(left, top, left + Constants.TileSize - 1, top + Constants.TileSize - 1, color);
 		}
 
-		private void DrawRectangle(int left, int top, int right, int bottom, Color color)
+		private void DrawRectangle(int left, int top, int right, int bottom, Color color, bool solid = true)
 		{
-			surface.SetData(new Color[] { color });
+			tileSurface.SetData(new Color[] { color });
 
 			Rectangle rectangle = new Rectangle(left, top, right - left, bottom - top);
 
-			spriteBatch.Begin();
-			spriteBatch.Draw(surface, rectangle, color);
-			spriteBatch.End();
-		}
-
-		private void DrawBorder(int left, int top, int right, int bottom, int thickness, Color color)
-		{
-			surface.SetData(new Color[] { color });
-
-			Rectangle rectangle = new Rectangle(left, top, right - left, bottom - top);
-
-			spriteBatch.Begin();
-			spriteBatch.Draw(surface, new Rectangle(rectangle.X, rectangle.Y, rectangle.Width, thickness), color);
-			spriteBatch.Draw(surface, new Rectangle(rectangle.X, rectangle.Y, thickness, rectangle.Height), color);
-			spriteBatch.Draw(surface, new Rectangle((rectangle.X + rectangle.Width - thickness), rectangle.Y, thickness, rectangle.Height), color);
-			spriteBatch.Draw(surface, new Rectangle(rectangle.X, rectangle.Y + rectangle.Height - thickness, rectangle.Width, thickness), color);
-			spriteBatch.End();
+			if (solid)
+			{
+				spriteBatch.Begin();
+				spriteBatch.Draw(tileSurface, rectangle, color);
+				spriteBatch.End();
+			}
+			else
+			{
+				spriteBatch.Begin();
+				spriteBatch.Draw(tileSurface, new Rectangle(rectangle.X, rectangle.Y, rectangle.Width, 1), color);
+				spriteBatch.Draw(tileSurface, new Rectangle(rectangle.X, rectangle.Y, 1, rectangle.Height), color);
+				spriteBatch.Draw(tileSurface, new Rectangle(rectangle.X + rectangle.Width - 1, rectangle.Y, 1, rectangle.Height), color);
+				spriteBatch.Draw(tileSurface, new Rectangle(rectangle.X, rectangle.Y + rectangle.Height - 1, rectangle.Width, 1), color);
+				spriteBatch.End();
+			}
 		}
 	}
 
