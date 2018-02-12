@@ -2,6 +2,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
+using System.Collections.Generic;
 
 namespace Quadris
 {
@@ -31,6 +32,7 @@ namespace Quadris
 		Texture2D tileSurface;
 
 		KeyboardState prevKeyState = Keyboard.GetState();
+		Dictionary<Keys, int> keyDownTime = new Dictionary<Keys, int>();
 
 		Random random = new Random();
 		TimeSpan gravityTime = TimeSpan.FromSeconds(1.0);
@@ -50,6 +52,10 @@ namespace Quadris
 				PreferredBackBufferWidth = Constants.ScreenWidth,
 				PreferredBackBufferHeight = Constants.ScreenHeight
 			};
+
+			keyDownTime[Keys.Left] = 0;
+			keyDownTime[Keys.Right] = 0;
+			keyDownTime[Keys.Down] = 0;
 		}
 
 		protected override void Initialize()
@@ -100,27 +106,73 @@ namespace Quadris
 				Exit();
 			}
 			
-			if (newState.IsKeyDown(Keys.Left) && !prevKeyState.IsKeyDown(Keys.Left))
+			if (newState.IsKeyDown(Keys.Left))
 			{
-				if (!well.Collision(piece.X - 1, piece.Y, piece.Tiles))
+				if (!prevKeyState.IsKeyDown(Keys.Left))
 				{
-					piece.X--;
+					keyDownTime[Keys.Left] = 0;
+
+					if (!well.Collision(piece.X - 1, piece.Y, piece.Tiles))
+					{
+						piece.X--;
+					}
+				}
+				else // key was down on last tick as well
+				{
+					if (++keyDownTime[Keys.Left] % Math.Max(4, 20 - keyDownTime[Keys.Left] / 2) == 0)
+					{
+						if (!well.Collision(piece.X - 1, piece.Y, piece.Tiles))
+						{
+							piece.X--;
+						}
+					}
 				}
 			}
-			else if (newState.IsKeyDown(Keys.Right) && !prevKeyState.IsKeyDown(Keys.Right))
+			else if (newState.IsKeyDown(Keys.Right))
 			{
-				if (!well.Collision(piece.X + 1, piece.Y, piece.Tiles))
+				if (!prevKeyState.IsKeyDown(Keys.Right))
 				{
-					piece.X++;
+					keyDownTime[Keys.Right] = 0;
+
+					if (!well.Collision(piece.X + 1, piece.Y, piece.Tiles))
+					{
+						piece.X++;
+					}
+				}
+				else
+				{
+					if (++keyDownTime[Keys.Right] % Math.Max(4, 20 - keyDownTime[Keys.Right] / 2) == 0)
+					{
+						if (!well.Collision(piece.X + 1, piece.Y, piece.Tiles))
+						{
+							piece.X++;
+						}
+					}
 				}
 			}
-			else if (newState.IsKeyDown(Keys.Down) && !prevKeyState.IsKeyDown(Keys.Down))
+			else if (newState.IsKeyDown(Keys.Down))
 			{
-				if (!well.Collision(piece.X, piece.Y + 1, piece.Tiles))
+				if (!prevKeyState.IsKeyDown(Keys.Down))
 				{
-					// Reset glide timer
-					elapsedTime = TimeSpan.Zero;
-					piece.Y++;
+					keyDownTime[Keys.Down] = 0;
+
+					if (!well.Collision(piece.X, piece.Y + 1, piece.Tiles))
+					{
+						// Reset glide timer
+						elapsedTime = TimeSpan.Zero;
+						piece.Y++;
+					}
+				}
+				else
+				{
+					if (++keyDownTime[Keys.Down] % Math.Max(4, 20 - keyDownTime[Keys.Down] / 2) == 0)
+					{
+						if (!well.Collision(piece.X, piece.Y + 1, piece.Tiles))
+						{
+							elapsedTime = TimeSpan.Zero;
+							piece.Y++;
+						}
+					}
 				}
 			}
 
