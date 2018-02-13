@@ -15,6 +15,17 @@ namespace Quadris
 			Color = new Color(0xFFFFFF);
 		}
 
+		public Tetromino Copy()
+		{
+			return new Tetromino
+			{
+				X = X,
+				Y = Y,
+				Color = Color,
+				Tiles = Tiles
+			};
+		}
+
 		public virtual int[,] Rotate()
 		{
 			if (Tiles == null || Tiles.Length == 0) return Tiles;

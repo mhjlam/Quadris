@@ -36,17 +36,17 @@ namespace Quadris
 			}
 		}
 
-		public bool Collision(int pieceX, int pieceY, int[,] pieceTiles)
+		public bool Collision(Tetromino piece, int offsetX = 0, int offsetY = 0)
 		{
 			// Loop over the 5x5 tiles of a piece on the board (i1,j1 = position in well; i2,j2 = position in piece tile grid)
 			for (int py = 0; py < Constants.PieceTiles; ++py)
 			{
 				for (int px = 0; px < Constants.PieceTiles; ++px)
 				{
-					if (pieceTiles[py, px] == 0) continue;
+					if (piece.Tiles[py, px] == 0) continue;
 
-					int wellX = (pieceX - Constants.PieceTiles / 2) + px;
-					int wellY = (pieceY - Constants.PieceTiles / 2) + py;
+					int wellX = (piece.X + offsetX - Constants.PieceTiles / 2) + px;
+					int wellY = (piece.Y + offsetY - Constants.PieceTiles / 2) + py;
 
 					// Check if the piece is inside horizontal bounds of the well
 					if (wellX < 0 || wellX > Constants.WellWidth - 1)

@@ -112,7 +112,7 @@ namespace Quadris
 				{
 					keyDownTime[Keys.Left] = 0;
 
-					if (!well.Collision(piece.X - 1, piece.Y, piece.Tiles))
+					if (!well.Collision(piece, -1, 0))
 					{
 						piece.X--;
 					}
@@ -121,7 +121,7 @@ namespace Quadris
 				{
 					if (++keyDownTime[Keys.Left] % Math.Max(4, 20 - keyDownTime[Keys.Left] / 2) == 0)
 					{
-						if (!well.Collision(piece.X - 1, piece.Y, piece.Tiles))
+						if (!well.Collision(piece, -1, 0))
 						{
 							piece.X--;
 						}
@@ -134,7 +134,7 @@ namespace Quadris
 				{
 					keyDownTime[Keys.Right] = 0;
 
-					if (!well.Collision(piece.X + 1, piece.Y, piece.Tiles))
+					if (!well.Collision(piece, 1, 0))
 					{
 						piece.X++;
 					}
@@ -143,7 +143,7 @@ namespace Quadris
 				{
 					if (++keyDownTime[Keys.Right] % Math.Max(4, 20 - keyDownTime[Keys.Right] / 2) == 0)
 					{
-						if (!well.Collision(piece.X + 1, piece.Y, piece.Tiles))
+						if (!well.Collision(piece, 1, 0))
 						{
 							piece.X++;
 						}
@@ -156,7 +156,7 @@ namespace Quadris
 				{
 					keyDownTime[Keys.Down] = 0;
 
-					if (!well.Collision(piece.X, piece.Y + 1, piece.Tiles))
+					if (!well.Collision(piece, 0, 1))
 					{
 						// Reset glide timer
 						elapsedTime = TimeSpan.Zero;
@@ -167,7 +167,7 @@ namespace Quadris
 				{
 					if (++keyDownTime[Keys.Down] % Math.Max(4, 20 - keyDownTime[Keys.Down] / 2) == 0)
 					{
-						if (!well.Collision(piece.X, piece.Y + 1, piece.Tiles))
+						if (!well.Collision(piece, 0, 1))
 						{
 							elapsedTime = TimeSpan.Zero;
 							piece.Y++;
@@ -178,34 +178,35 @@ namespace Quadris
 
 			if (newState.IsKeyDown(Keys.Z) && !prevKeyState.IsKeyDown(Keys.Z))
 			{
-				int[,] rotatedTiles = piece.Rotate2();
+				Tetromino rotated = piece.Copy();
+				rotated.Tiles = piece.Rotate();
 
 				// attempt rotation as-is
-				if (!well.Collision(piece.X, piece.Y, rotatedTiles))
+				if (!well.Collision(rotated))
 				{
-					piece.Tiles = rotatedTiles;
+					piece.Tiles = rotated.Tiles;
 				}
-				// attempt wall kick right before rotation
-				else if (!well.Collision(piece.X + 1, piece.Y, rotatedTiles))
+				// attempt wall-kick-right before rotation
+				else if (!well.Collision(rotated, 1, 0))
 				{
 					piece.X++;
-					piece.Tiles = rotatedTiles;
+					piece.Tiles = rotated.Tiles;
 				}
-				// attempt wall kick left before rotation
-				else if (!well.Collision(piece.X - 1, piece.Y, rotatedTiles))
+				// attempt wall-kick-left before rotation
+				else if (!well.Collision(rotated, -1, 0))
 				{
 					piece.X--;
-					piece.Tiles = rotatedTiles;
+					piece.Tiles = rotated.Tiles;
 				}
 				// specific test for newly spawned piece
-				else if (piece.Y <= Constants.PieceTiles / 2)
+				else if (rotated.Y <= Constants.PieceTiles / 2)
 				{
-					for (int y = piece.Y; y < Constants.PieceTiles; ++y)
+					for (int y = rotated.Y; y < Constants.PieceTiles; ++y)
 					{
-						if (!well.Collision(piece.X, y, rotatedTiles))
+						if (!well.Collision(rotated, 0, y))
 						{
-							piece.Y += y;
-							piece.Tiles = rotatedTiles;
+							piece.Y = y;
+							piece.Tiles = rotated.Tiles;
 							break;
 						}
 					}
@@ -215,7 +216,7 @@ namespace Quadris
 			if (newState.IsKeyDown(Keys.X) && !prevKeyState.IsKeyDown(Keys.X))
 			{
 				// Drop piece
-				while (!well.Collision(piece.X, piece.Y, piece.Tiles))
+				while (!well.Collision(piece))
 				{
 					piece.Y++;
 				}
@@ -239,7 +240,7 @@ namespace Quadris
 			{
 				elapsedTime = TimeSpan.Zero;
 
-				if (!well.Collision(piece.X, piece.Y + 1, piece.Tiles))
+				if (!well.Collision(piece, 0, 1))
 				{
 					piece.Y++;
 				}
@@ -311,7 +312,7 @@ namespace Quadris
 			}
 
 			// Fail state occurs when there is no space to spawn next piece
-			if (well.Collision(piece.X, piece.Y, piece.Tiles))
+			if (well.Collision(piece, 0, 0))
 			{
 				Exit();
 			}
