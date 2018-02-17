@@ -4,10 +4,11 @@ namespace Quadris
 {
 	public class Tetromino
 	{
-		public int X;
-		public int Y;
+		public float X;
+		public float Y;
 
 		public Color Color;
+		public Color Color2;
 		public int[,] Tiles;
 
 		public Tetromino()
@@ -78,6 +79,7 @@ namespace Quadris
 		public I()
 		{
 			Color = new Color(0xFFFF00);
+			Color2 = new Color(0xFFA500);
 
 			Tiles = new int[5, 5]
 			{
@@ -99,6 +101,7 @@ namespace Quadris
 		public J()
 		{
 			Color = new Color(0xFF0000);
+			Color2 = new Color(0xFFA500);
 
 			Tiles = new int[5, 5]
 			{
@@ -118,6 +121,7 @@ namespace Quadris
 		public L()
 		{
 			Color = new Color(0x00A5FF);
+			Color2 = new Color(0x0080FF);
 
 			Tiles = new int[5, 5]
 			{
@@ -137,6 +141,7 @@ namespace Quadris
 		public O()
 		{
 			Color = new Color(0x00FFFF);
+			Color2 = new Color(0xA5FFFF);
 
 			Tiles = new int[5, 5]
 			{
@@ -167,6 +172,7 @@ namespace Quadris
 		public S()
 		{
 			Color = new Color(0x00FF00);
+			Color2 = new Color(0x00FFA5);
 
 			Tiles = new int[5, 5]
 			{
@@ -184,7 +190,8 @@ namespace Quadris
 		public T()
 		{
 			Color = new Color(0xFF00FF);
-
+			Color2 = new Color(0xFFA5FF);
+			
 			Tiles = new int[5, 5]
 			{
 				{ 0, 0, 0, 0, 0 },
@@ -201,6 +208,7 @@ namespace Quadris
 		public Z()
 		{
 			Color = new Color(0x0000FF);
+			Color2 = new Color(0xD2D2FF);
 
 			Tiles = new int[5, 5]
 			{

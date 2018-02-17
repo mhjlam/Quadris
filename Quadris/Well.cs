@@ -1,4 +1,5 @@
 ﻿using Microsoft.Xna.Framework;
+using System.Collections.Generic;
 
 namespace Quadris
 {
@@ -22,7 +23,7 @@ namespace Quadris
 
 		public Color TileColor(int x, int y)
 		{
-			switch (Tile(x, y))
+			switch (wellTiles[y * Constants.WellWidth + x])
 			{
 				case 0:  return new Color(0x000000); // black
 				case 1:  return new Color(0xFFFF00); // cyan
@@ -45,8 +46,8 @@ namespace Quadris
 				{
 					if (piece.Tiles[py, px] == 0) continue;
 
-					int wellX = (piece.X + offsetX - Constants.PieceTiles / 2) + px;
-					int wellY = (piece.Y + offsetY - Constants.PieceTiles / 2) + py;
+					int wellX = ((int)piece.X + offsetX - Constants.PieceTiles / 2) + px;
+					int wellY = ((int)piece.Y + offsetY - Constants.PieceTiles / 2) + py;
 
 					// Check if the piece is inside horizontal bounds of the well
 					if (wellX < 0 || wellX > Constants.WellWidth - 1)
@@ -72,7 +73,7 @@ namespace Quadris
 			return false;
 		}
 
-		public void StorePiece(int pieceX, int pieceY, Tetromino piece)
+		public void Land(Tetromino piece)
 		{
 			int t = 0;
 			if (piece is I) t = 1;
@@ -89,17 +90,18 @@ namespace Quadris
 				{
 					if (piece.Tiles[py, px] == 0) continue;
 
-					int wellX = (pieceX - Constants.PieceTiles / 2) + px;
-					int wellY = (pieceY - Constants.PieceTiles / 2) + py;
+					int wellX = ((int)piece.X - Constants.PieceTiles / 2) + px;
+					int wellY = ((int)piece.Y - Constants.PieceTiles / 2) + py;
 
 					wellTiles[wellY * Constants.WellWidth + wellX] = t;
 				}
 			}
 		}
 
-		public void ClearLines()
+		public List<int> FilledLines()
 		{
-			// Remove all lines that are completely filled
+			List<int> filledLines = new List<int>();
+
 			for (int y = 0; y < Constants.WellHeight; y++)
 			{
 				int x = 0;
@@ -109,15 +111,24 @@ namespace Quadris
 					x++;
 				}
 
-				// Move all lines above one row down
 				if (x == Constants.WellWidth)
 				{
-					for (int k = y; k > 0; k--)
+					filledLines.Add(y);
+				}
+			}
+
+			return filledLines;
+		}
+
+		public void Clear(List<int> lines)
+		{
+			for (int i = 0; i < lines.Count; ++i)
+			{
+				for (int y = lines[i]; y > 0; y--)
+				{
+					for (int x = 0; x < Constants.WellWidth; x++)
 					{
-						for (int h = 0; h < Constants.WellWidth; h++)
-						{
-							wellTiles[k * Constants.WellWidth + h] = wellTiles[(k - 1) * Constants.WellWidth + h];
-						}
+						wellTiles[y * Constants.WellWidth + x] = wellTiles[(y - 1) * Constants.WellWidth + x];
 					}
 				}
 			}

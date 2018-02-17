@@ -11,17 +11,18 @@ namespace Quadris
 		public const int ScreenWidth = 640;
 		public const int ScreenHeight = 480;
 
-		public const int PieceTiles = 5;
 		public const int TileSize = 16;
+		public const int PieceTiles = 5;
 
 		public const int WellWidth = 10;
 		public const int WellHeight = 20;
+
 		public const int WellCenterX = ScreenWidth / 2;
 		public const int WellCenterY = ScreenHeight / 2;
 
+		public const int WellTop = WellCenterY - (WellHeight * TileSize / 2);
 		public const int WellLeft = WellCenterX - (WellWidth * TileSize / 2);
 		public const int WellRight = WellCenterX + (WellWidth * TileSize / 2);
-		public const int WellTop = WellCenterY - (WellHeight * TileSize / 2);
 		public const int WellBottom = WellCenterY + (WellHeight * TileSize / 2);
 	}
 
@@ -35,12 +36,16 @@ namespace Quadris
 		Dictionary<Keys, int> keyDownTime = new Dictionary<Keys, int>();
 
 		Random random = new Random();
-		TimeSpan gravityTime = TimeSpan.FromSeconds(1.0);
-		TimeSpan elapsedTime = TimeSpan.Zero;
+		TimeSpan gravityTimer = TimeSpan.FromSeconds(1.0);
+		TimeSpan gravityTime = TimeSpan.Zero;
+
+		List<int> FilledLines = new List<int>();
+		TimeSpan clearTimer = TimeSpan.FromSeconds(0.2);
+		TimeSpan clearTime = TimeSpan.Zero;
 
 		Well well = new Well();
 		Tetromino piece = new Tetromino();
-		Tetromino nextPiece = new Tetromino();
+		Tetromino preview = new Tetromino();
 
 		public Quadris()
 		{
@@ -53,6 +58,10 @@ namespace Quadris
 				PreferredBackBufferHeight = Constants.ScreenHeight
 			};
 
+			Window.AllowUserResizing = false;
+			Window.Position = new Point((GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Width - graphicsDevice.PreferredBackBufferWidth) / 2 - 30, 
+										(GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Height - graphicsDevice.PreferredBackBufferHeight) / 2);
+
 			keyDownTime[Keys.Left] = 0;
 			keyDownTime[Keys.Right] = 0;
 			keyDownTime[Keys.Down] = 0;
@@ -60,10 +69,7 @@ namespace Quadris
 
 		protected override void Initialize()
 		{
-			Window.AllowUserResizing = false;
-
 			SpawnPiece(true);
-
 			base.Initialize();
 		}
 
@@ -81,8 +87,25 @@ namespace Quadris
 
 		protected override void Update(GameTime gameTime)
 		{
-			UpdateInput(gameTime);
-			UpdatePiece(gameTime);
+			if (FilledLines.Count > 0)
+			{
+				clearTime += gameTime.ElapsedGameTime;
+
+				if (clearTime >= clearTimer)
+				{
+					well.Clear(FilledLines);
+
+					clearTime = TimeSpan.Zero;
+					FilledLines.Clear();
+
+					SpawnPiece();
+				}
+			}
+			else
+			{
+				UpdateInput(gameTime);
+				UpdatePiece(gameTime);
+			}
 
 			base.Update(gameTime);
 		}
@@ -90,7 +113,10 @@ namespace Quadris
 		protected override void Draw(GameTime gameTime)
 		{
 			GraphicsDevice.Clear(Color.Black);
-			DrawScene();
+
+			DrawWell();
+			DrawTetromino(piece);
+			DrawPreview();
 
 			base.Draw(gameTime);
 		}
@@ -111,6 +137,7 @@ namespace Quadris
 				if (!prevKeyState.IsKeyDown(Keys.Left))
 				{
 					keyDownTime[Keys.Left] = 0;
+					keyDownTime[Keys.Right] = 0;
 
 					if (!well.Collision(piece, -1, 0))
 					{
@@ -132,6 +159,7 @@ namespace Quadris
 			{
 				if (!prevKeyState.IsKeyDown(Keys.Right))
 				{
+					keyDownTime[Keys.Left] = 0;
 					keyDownTime[Keys.Right] = 0;
 
 					if (!well.Collision(piece, 1, 0))
@@ -150,6 +178,8 @@ namespace Quadris
 					}
 				}
 			}
+
+			// Soft drop
 			else if (newState.IsKeyDown(Keys.Down))
 			{
 				if (!prevKeyState.IsKeyDown(Keys.Down))
@@ -158,8 +188,6 @@ namespace Quadris
 
 					if (!well.Collision(piece, 0, 1))
 					{
-						// Reset glide timer
-						elapsedTime = TimeSpan.Zero;
 						piece.Y++;
 					}
 				}
@@ -169,7 +197,6 @@ namespace Quadris
 					{
 						if (!well.Collision(piece, 0, 1))
 						{
-							elapsedTime = TimeSpan.Zero;
 							piece.Y++;
 						}
 					}
@@ -199,13 +226,14 @@ namespace Quadris
 					piece.Tiles = rotated.Tiles;
 				}
 				// specific test for newly spawned piece
-				else if (rotated.Y <= Constants.PieceTiles / 2)
+				else if ((int)rotated.Y < Constants.PieceTiles)
 				{
-					for (int y = rotated.Y; y < Constants.PieceTiles; ++y)
+					for (int y = (int)rotated.Y; y < Constants.PieceTiles; ++y)
 					{
-						if (!well.Collision(rotated, 0, y))
+						rotated.Y = y;
+						if (!well.Collision(rotated))
 						{
-							piece.Y = y;
+							piece.Y = rotated.Y;
 							piece.Tiles = rotated.Tiles;
 							break;
 						}
@@ -213,19 +241,15 @@ namespace Quadris
 				}
 			}
 
+			// Hard drop
 			if (newState.IsKeyDown(Keys.X) && !prevKeyState.IsKeyDown(Keys.X))
 			{
-				// Drop piece
 				while (!well.Collision(piece))
 				{
 					piece.Y++;
 				}
 
-				well.StorePiece(piece.X, piece.Y - 1, piece);
-				well.ClearLines();
-
-				elapsedTime = TimeSpan.Zero;
-				SpawnPiece();
+				piece.Y--;
 			}
 
 			// Update keyboard state
@@ -234,22 +258,38 @@ namespace Quadris
 
 		private void UpdatePiece(GameTime gameTime)
 		{
-			elapsedTime += gameTime.ElapsedGameTime;
-
-			if (elapsedTime > gravityTime)
+			// Drop
+			if (well.Collision(piece, 0, 1))
 			{
-				elapsedTime = TimeSpan.Zero;
+				clearTime = TimeSpan.Zero;
+				gravityTime = TimeSpan.Zero;
 
-				if (!well.Collision(piece, 0, 1))
+				well.Land(piece);
+				FilledLines = well.FilledLines();
+
+				if (FilledLines.Count == 0)
 				{
-					piece.Y++;
+					SpawnPiece();
 				}
 				else
 				{
-					well.StorePiece(piece.X, piece.Y, piece);
-					well.ClearLines();
+					piece.Color = piece.Color2;
+					piece.Color.A = 255;
+				}
+			}
+			else
+			{
+				// Gravity
+				gravityTime += gameTime.ElapsedGameTime;
 
-					SpawnPiece();
+				if (gravityTime >= gravityTimer)
+				{
+					gravityTime = TimeSpan.Zero;
+
+					if (!well.Collision(piece, 0, 1))
+					{
+						piece.Y++;
+					}
 				}
 			}
 		}
@@ -269,6 +309,11 @@ namespace Quadris
 				case 6: tetromino = new Z(); break;
 			}
 
+			for (int i = 0; i < random.Next(0, 4); ++i)
+			{
+				tetromino.Tiles = tetromino.Rotate();
+			}
+
 			return tetromino;
 		}
 
@@ -278,16 +323,10 @@ namespace Quadris
 			{
 				// Generate random piece type
 				piece = GenerateRandomPiece();
-
-				// Generate random rotation
-				for (int i = 0; i < random.Next(0, 4); ++i)
-				{
-					piece.Tiles = piece.Rotate();
-				}
 			}
 			else
 			{
-				piece = nextPiece;
+				piece = preview;
 			}
 
 			piece.X = Constants.WellWidth / 2;
@@ -318,23 +357,10 @@ namespace Quadris
 			}
 
 			// Generate random piece type
-			nextPiece = GenerateRandomPiece();
+			preview = GenerateRandomPiece();
 
-			// Generate random rotation
-			for (int i = 0; i < random.Next(0, 4); ++i)
-			{
-				nextPiece.Tiles = nextPiece.Rotate();
-			}
-
-			nextPiece.X = Constants.WellWidth + 5;
-			nextPiece.Y = 5;
-		}
-
-		private void DrawScene()
-		{
-			DrawWell();
-			DrawTetromino(piece);
-			DrawPreview();
+			preview.X = Constants.WellWidth + 5;
+			preview.Y = 5;
 		}
 
 		private void DrawWell()
@@ -361,18 +387,18 @@ namespace Quadris
 			int padding = 10;
 			int offset = (Constants.TileSize * Constants.PieceTiles / 2) - padding;
 
-			int x = Constants.WellCenterX - (Constants.TileSize * (Constants.WellWidth / 2)) + (nextPiece.X - Constants.PieceTiles / 2) * Constants.TileSize;
-			int y = Constants.WellCenterY - (Constants.TileSize * (Constants.WellHeight / 2)) + (nextPiece.Y - Constants.PieceTiles / 2) * Constants.TileSize;
+			int x = -1 + Constants.WellCenterX - (Constants.TileSize * (Constants.WellWidth / 2)) + ((int)preview.X - Constants.PieceTiles / 2) * Constants.TileSize;
+			int y = -1 + Constants.WellCenterY - (Constants.TileSize * (Constants.WellHeight / 2)) + ((int)preview.Y - Constants.PieceTiles / 2) * Constants.TileSize;
 
 			DrawRectangle(x, y, x + Constants.PieceTiles * Constants.TileSize, y + Constants.PieceTiles * Constants.TileSize, Color.White, false);
-			DrawTetromino(nextPiece);
+			DrawTetromino(preview);
 		}
 
 		private void DrawTetromino(Tetromino tetromino)
 		{
 			// Position of the tile to draw
-			int x = Constants.WellCenterX - (Constants.TileSize * (Constants.WellWidth / 2)) + (tetromino.X - Constants.PieceTiles / 2) * Constants.TileSize;
-			int y = Constants.WellCenterY - (Constants.TileSize * (Constants.WellHeight / 2)) + (tetromino.Y - Constants.PieceTiles / 2) * Constants.TileSize;
+			int x = -1 + Constants.WellCenterX - (Constants.TileSize * (Constants.WellWidth / 2)) + ((int)tetromino.X - Constants.PieceTiles / 2) * Constants.TileSize;
+			int y = -1 + Constants.WellCenterY - (Constants.TileSize * (Constants.WellHeight / 2)) + ((int)tetromino.Y - Constants.PieceTiles / 2) * Constants.TileSize;
 			
 			// Draw filled tiles
 			for (int py = 0; py < Constants.PieceTiles; py++)
