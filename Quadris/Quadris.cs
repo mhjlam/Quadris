@@ -24,28 +24,48 @@ namespace Quadris
 		public const int WellLeft = WellCenterX - (WellWidth * TileSize / 2);
 		public const int WellRight = WellCenterX + (WellWidth * TileSize / 2);
 		public const int WellBottom = WellCenterY + (WellHeight * TileSize / 2);
+
+		public static readonly int[] Gravity =
+		{
+			// frames/cell					// level
+			48,								// 0
+			43,								// 1
+			38,								// 2
+			33,								// 3
+			28,								// 4
+			23,								// 5
+			18,								// 6
+			13,								// 7
+			8,								// 8
+			6,								// 9
+			5, 5, 5,						// 10-12
+			4, 4, 4,						// 13-15
+			3, 3, 3,						// 16-18
+			2, 2, 2, 2, 2, 2, 2, 2, 2, 2,	// 19-28
+			1								// 29+
+		};
 	}
 
 	public class Quadris : Game
 	{
 		GraphicsDeviceManager graphicsDevice;
 		SpriteBatch spriteBatch;
+		SpriteFont spriteFont;
 		Texture2D tileSurface;
 
 		KeyboardState prevKeyState = Keyboard.GetState();
 		Dictionary<Keys, int> keyDownTime = new Dictionary<Keys, int>();
 
-		bool newPiece = true;
-		bool failState = false;
+		int score = 0;
+		int level = 0;
+		int lines = 0;
+		bool newpiece = true;
+		bool gameover = false;
 
 		Random random = new Random();
-		TimeSpan dropTimer = TimeSpan.FromSeconds(0.5);
-		TimeSpan dropTime = TimeSpan.Zero;
-
-		TimeSpan gravityTimer = TimeSpan.FromSeconds(1.0);
+		List<int> LinesCleared = new List<int>();
+		TimeSpan gravityTimer = TimeSpan.FromSeconds(0.8);
 		TimeSpan gravityTime = TimeSpan.Zero;
-
-		List<int> FilledLines = new List<int>();
 		TimeSpan clearTimer = TimeSpan.FromSeconds(0.2);
 		TimeSpan clearTime = TimeSpan.Zero;
 
@@ -82,6 +102,7 @@ namespace Quadris
 		protected override void LoadContent()
 		{
 			spriteBatch = new SpriteBatch(GraphicsDevice);
+			spriteFont = Content.Load<SpriteFont>("RedOctober");
 			tileSurface = new Texture2D(graphicsDevice.GraphicsDevice, 1, 1, false, SurfaceFormat.Color); // empty 1x1 color surface
 		}
 
@@ -93,19 +114,36 @@ namespace Quadris
 
 		protected override void Update(GameTime gameTime)
 		{
-			if (FilledLines.Count > 0)
+			if (LinesCleared.Count > 0)
 			{
 				clearTime += gameTime.ElapsedGameTime;
 
 				if (clearTime >= clearTimer)
 				{
-					// draw clear animation
-
-					well.Clear(FilledLines);
+					well.Clear(LinesCleared);
 
 					clearTime = TimeSpan.Zero;
-					FilledLines.Clear();
+					int prevLines = lines;
+					lines += LinesCleared.Count;
 
+					// Update level
+					if (lines / 10 > prevLines / 10)
+					{
+						level = Math.Min(level + 1, 29);
+						gravityTimer = TimeSpan.FromSeconds(Constants.Gravity[level] / 60.0);
+					}
+
+					// Update score
+					int multiplier = 40;
+					switch (LinesCleared.Count)
+					{
+						case 2: multiplier = 100; break;
+						case 3: multiplier = 300; break;
+						case 4: multiplier = 1200; break;
+					}
+					score += multiplier * (level + 1);
+
+					LinesCleared.Clear();
 					SpawnPiece();
 				}
 			}
@@ -125,6 +163,7 @@ namespace Quadris
 			DrawWell();
 			DrawPiece();
 			DrawPreview();
+			DrawOverlay();
 
 			base.Draw(gameTime);
 		}
@@ -144,7 +183,7 @@ namespace Quadris
 			{
 				if (!prevKeyState.IsKeyDown(Keys.Left))
 				{
-					newPiece = false;
+					newpiece = false;
 					keyDownTime[Keys.Left] = 0;
 					keyDownTime[Keys.Right] = 0;
 
@@ -153,7 +192,7 @@ namespace Quadris
 						piece.X--;
 					}
 				}
-				else if (!newPiece)
+				else if (!newpiece)
 				{
 					// key was down on last tick as well
 					if (++keyDownTime[Keys.Left] % Math.Max(4, 20 - keyDownTime[Keys.Left] / 2) == 0)
@@ -169,7 +208,7 @@ namespace Quadris
 			{
 				if (!prevKeyState.IsKeyDown(Keys.Right))
 				{
-					newPiece = false;
+					newpiece = false;
 					keyDownTime[Keys.Left] = 0;
 					keyDownTime[Keys.Right] = 0;
 
@@ -178,7 +217,7 @@ namespace Quadris
 						piece.X++;
 					}
 				}
-				else if (!newPiece)
+				else if (!newpiece)
 				{
 					if (++keyDownTime[Keys.Right] % Math.Max(4, 20 - keyDownTime[Keys.Right] / 2) == 0)
 					{
@@ -195,7 +234,7 @@ namespace Quadris
 			{
 				if (!prevKeyState.IsKeyDown(Keys.Down))
 				{
-					newPiece = false;
+					newpiece = false;
 					keyDownTime[Keys.Down] = 0;
 
 					if (!well.Collision(piece, 0, 1))
@@ -204,10 +243,10 @@ namespace Quadris
 					}
 					else
 					{
-						dropTime = dropTimer;
+						gravityTime = gravityTimer;
 					}
 				}
-				else if (!newPiece)
+				else if (!newpiece)
 				{
 					if (++keyDownTime[Keys.Down] % Math.Max(4, 20 - keyDownTime[Keys.Down] / 2) == 0)
 					{
@@ -217,7 +256,7 @@ namespace Quadris
 						}
 						else
 						{
-							dropTime = dropTimer;
+							gravityTime = gravityTimer;
 						}
 					}
 				}
@@ -256,7 +295,7 @@ namespace Quadris
 				}
 
 				piece.Y--;
-				dropTime = dropTimer;
+				gravityTime = gravityTimer;
 			}
 
 			// Update keyboard state
@@ -266,9 +305,9 @@ namespace Quadris
 		private void UpdatePiece(GameTime gameTime)
 		{
 			// Gravity
-			if (dropTime >= dropTimer)
+			if (gravityTime >= gravityTimer)
 			{
-				dropTime = TimeSpan.Zero;
+				gravityTime = TimeSpan.Zero;
 
 				if (!well.Collision(piece, 0, 1))
 				{
@@ -277,26 +316,26 @@ namespace Quadris
 				else
 				{
 					clearTime = TimeSpan.Zero;
-					dropTime = TimeSpan.Zero;
+					gravityTime = TimeSpan.Zero;
 
 					well.Land(piece);
-					FilledLines = well.FilledLines();
+					LinesCleared = well.LinesCleared();
 
-					if (FilledLines.Count == 0)
+					if (LinesCleared.Count == 0)
 					{
 						SpawnPiece();
 					}
 					else
 					{
-						for (int i = 0; i < FilledLines.Count; ++i)
+						for (int i = 0; i < LinesCleared.Count; ++i)
 						{
-							well.MarkRow(FilledLines[i]);
+							well.MarkRow(LinesCleared[i]);
 						}
 					}
 				}
 			}
 
-			dropTime += gameTime.ElapsedGameTime;
+			gravityTime += gameTime.ElapsedGameTime;
 		}
 
 		private Tetromino GenerateRandomPiece()
@@ -325,7 +364,7 @@ namespace Quadris
 		private void SpawnPiece(bool first = false)
 		{
 			// Reset keys
-			newPiece = true;
+			newpiece = true;
 			keyDownTime[Keys.Left] = 0;
 			keyDownTime[Keys.Right] = 0;
 			keyDownTime[Keys.Down] = 0;
@@ -356,7 +395,7 @@ namespace Quadris
 			// Fail state occurs when there is no space to spawn next piece
 			if (well.Collision(piece, 0, 0))
 			{
-				failState = true;
+				gameover = true;
 				Exit();
 			}
 
@@ -387,9 +426,6 @@ namespace Quadris
 
 		private void DrawPreview()
 		{
-			int padding = 10;
-			int offset = (Constants.TileSize * Constants.PieceTiles / 2) - padding;
-
 			int x = -1 + Constants.WellCenterX - (Constants.TileSize * (Constants.WellWidth / 2)) + ((int)preview.X - Constants.PieceTiles / 2) * Constants.TileSize;
 			int y = -1 + Constants.WellCenterY - (Constants.TileSize * (Constants.WellHeight / 2)) + ((int)preview.Y - Constants.PieceTiles / 2) * Constants.TileSize;
 
@@ -404,6 +440,19 @@ namespace Quadris
 					DrawTile((x + py * Constants.TileSize), (y + px * Constants.TileSize), preview.Color);
 				}
 			}
+		}
+
+		private void DrawOverlay()
+		{
+			int x = -1 + Constants.WellCenterX - (Constants.TileSize * (Constants.WellWidth / 2)) + ((int)preview.X - Constants.PieceTiles / 2) * Constants.TileSize;
+			int y = -1 + Constants.WellCenterY - (Constants.TileSize * (Constants.WellHeight / 2)) + ((int)preview.Y - Constants.PieceTiles / 2) * Constants.TileSize;
+			y += Constants.PieceTiles * Constants.TileSize + 10;
+
+			spriteBatch.Begin();
+			spriteBatch.DrawString(spriteFont, "Score: " + score, new Vector2(x, y), Color.White);
+			spriteBatch.DrawString(spriteFont, "Level: " + level, new Vector2(x, y + 20), Color.White);
+			spriteBatch.DrawString(spriteFont, "Lines: " + lines, new Vector2(x, y + 40), Color.White);
+			spriteBatch.End();
 		}
 
 		private void DrawPiece()

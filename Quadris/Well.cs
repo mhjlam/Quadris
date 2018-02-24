@@ -99,7 +99,7 @@ namespace Quadris
 			}
 		}
 
-		public List<int> FilledLines()
+		public List<int> LinesCleared()
 		{
 			List<int> filledLines = new List<int>();
 
