@@ -6,8 +6,6 @@ An unfinished Tetris game.
 
 ## More stuff to add
 
-- Level: speed up gravity
-- Score: based on lines cleared and level
 - Title screen (play / exit)
 - Highscores
-- Tetromino block sprites
+- Better graphics (tetromino sprites, nicer overlay, line clear animation)
