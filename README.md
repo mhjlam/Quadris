@@ -6,10 +6,8 @@ An unfinished Tetris game.
 
 ## More stuff to add
 
-- Improved touch-down mechanic (store piece faster if collision occurs due to gravity or gliding)
-- Score: line clear & time-based multipliers
-- Level: speed up gravity over time
+- Level: speed up gravity
+- Score: based on lines cleared and level
 - Title screen (play / exit)
-- Keep track of highscores
-- Adjustable window resolution and well size
-- Improved graphics (better looking tetrominoes and overlay)
+- Highscores
+- Tetromino block sprites
