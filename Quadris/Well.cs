@@ -25,6 +25,7 @@ namespace Quadris
 		{
 			switch (wellTiles[y * Constants.WellWidth + x])
 			{
+				case -1: return new Color(0xFFFFFF); // white
 				case 0:  return new Color(0x000000); // black
 				case 1:  return new Color(0xFFFF00); // cyan
 				case 2:  return new Color(0xFF0000); // blue
@@ -56,7 +57,7 @@ namespace Quadris
 					}
 
 					// Check if the piece is inside vertical bounds of the well
-					if (wellY < 0 || wellY > Constants.WellHeight - 1)
+					if (wellY > Constants.WellHeight - 1)
 					{
 						return true;
 					}
@@ -118,6 +119,14 @@ namespace Quadris
 			}
 
 			return filledLines;
+		}
+
+		public void MarkRow(int y)
+		{
+			for (int x = 0; x < Constants.WellWidth; ++x)
+			{
+				wellTiles[y * Constants.WellWidth + x] = -1;
+			}
 		}
 
 		public void Clear(List<int> lines)

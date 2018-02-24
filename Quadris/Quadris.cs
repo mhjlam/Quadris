@@ -35,7 +35,13 @@ namespace Quadris
 		KeyboardState prevKeyState = Keyboard.GetState();
 		Dictionary<Keys, int> keyDownTime = new Dictionary<Keys, int>();
 
+		bool newPiece = true;
+		bool failState = false;
+
 		Random random = new Random();
+		TimeSpan dropTimer = TimeSpan.FromSeconds(0.5);
+		TimeSpan dropTime = TimeSpan.Zero;
+
 		TimeSpan gravityTimer = TimeSpan.FromSeconds(1.0);
 		TimeSpan gravityTime = TimeSpan.Zero;
 
@@ -93,6 +99,8 @@ namespace Quadris
 
 				if (clearTime >= clearTimer)
 				{
+					// draw clear animation
+
 					well.Clear(FilledLines);
 
 					clearTime = TimeSpan.Zero;
@@ -136,6 +144,7 @@ namespace Quadris
 			{
 				if (!prevKeyState.IsKeyDown(Keys.Left))
 				{
+					newPiece = false;
 					keyDownTime[Keys.Left] = 0;
 					keyDownTime[Keys.Right] = 0;
 
@@ -144,8 +153,9 @@ namespace Quadris
 						piece.X--;
 					}
 				}
-				else // key was down on last tick as well
+				else if (!newPiece)
 				{
+					// key was down on last tick as well
 					if (++keyDownTime[Keys.Left] % Math.Max(4, 20 - keyDownTime[Keys.Left] / 2) == 0)
 					{
 						if (!well.Collision(piece, -1, 0))
@@ -159,6 +169,7 @@ namespace Quadris
 			{
 				if (!prevKeyState.IsKeyDown(Keys.Right))
 				{
+					newPiece = false;
 					keyDownTime[Keys.Left] = 0;
 					keyDownTime[Keys.Right] = 0;
 
@@ -167,7 +178,7 @@ namespace Quadris
 						piece.X++;
 					}
 				}
-				else
+				else if (!newPiece)
 				{
 					if (++keyDownTime[Keys.Right] % Math.Max(4, 20 - keyDownTime[Keys.Right] / 2) == 0)
 					{
@@ -184,20 +195,29 @@ namespace Quadris
 			{
 				if (!prevKeyState.IsKeyDown(Keys.Down))
 				{
+					newPiece = false;
 					keyDownTime[Keys.Down] = 0;
 
 					if (!well.Collision(piece, 0, 1))
 					{
 						piece.Y++;
 					}
+					else
+					{
+						dropTime = dropTimer;
+					}
 				}
-				else
+				else if (!newPiece)
 				{
 					if (++keyDownTime[Keys.Down] % Math.Max(4, 20 - keyDownTime[Keys.Down] / 2) == 0)
 					{
 						if (!well.Collision(piece, 0, 1))
 						{
 							piece.Y++;
+						}
+						else
+						{
+							dropTime = dropTimer;
 						}
 					}
 				}
@@ -225,20 +245,6 @@ namespace Quadris
 					piece.X--;
 					piece.Tiles = rotated.Tiles;
 				}
-				// specific test for newly spawned piece
-				else if ((int)rotated.Y < Constants.PieceTiles)
-				{
-					for (int y = (int)rotated.Y; y < Constants.PieceTiles; ++y)
-					{
-						rotated.Y = y;
-						if (!well.Collision(rotated))
-						{
-							piece.Y = rotated.Y;
-							piece.Tiles = rotated.Tiles;
-							break;
-						}
-					}
-				}
 			}
 
 			// Hard drop
@@ -250,6 +256,7 @@ namespace Quadris
 				}
 
 				piece.Y--;
+				dropTime = dropTimer;
 			}
 
 			// Update keyboard state
@@ -258,40 +265,38 @@ namespace Quadris
 
 		private void UpdatePiece(GameTime gameTime)
 		{
-			// Drop
-			if (well.Collision(piece, 0, 1))
+			// Gravity
+			if (dropTime >= dropTimer)
 			{
-				clearTime = TimeSpan.Zero;
-				gravityTime = TimeSpan.Zero;
+				dropTime = TimeSpan.Zero;
 
-				well.Land(piece);
-				FilledLines = well.FilledLines();
-
-				if (FilledLines.Count == 0)
+				if (!well.Collision(piece, 0, 1))
 				{
-					SpawnPiece();
+					piece.Y++;
 				}
 				else
 				{
-					piece.Color = piece.Color2;
-					piece.Color.A = 255;
-				}
-			}
-			else
-			{
-				// Gravity
-				gravityTime += gameTime.ElapsedGameTime;
+					clearTime = TimeSpan.Zero;
+					dropTime = TimeSpan.Zero;
 
-				if (gravityTime >= gravityTimer)
-				{
-					gravityTime = TimeSpan.Zero;
+					well.Land(piece);
+					FilledLines = well.FilledLines();
 
-					if (!well.Collision(piece, 0, 1))
+					if (FilledLines.Count == 0)
 					{
-						piece.Y++;
+						SpawnPiece();
+					}
+					else
+					{
+						for (int i = 0; i < FilledLines.Count; ++i)
+						{
+							well.MarkRow(FilledLines[i]);
+						}
 					}
 				}
 			}
+
+			dropTime += gameTime.ElapsedGameTime;
 		}
 
 		private Tetromino GenerateRandomPiece()
@@ -319,16 +324,14 @@ namespace Quadris
 
 		private void SpawnPiece(bool first = false)
 		{
-			if (first)
-			{
-				// Generate random piece type
-				piece = GenerateRandomPiece();
-			}
-			else
-			{
-				piece = preview;
-			}
+			// Reset keys
+			newPiece = true;
+			keyDownTime[Keys.Left] = 0;
+			keyDownTime[Keys.Right] = 0;
+			keyDownTime[Keys.Down] = 0;
 
+			// Set current piece
+			piece = (first) ? GenerateRandomPiece() : preview;
 			piece.X = Constants.WellWidth / 2;
 			piece.Y = 0;
 
@@ -353,12 +356,12 @@ namespace Quadris
 			// Fail state occurs when there is no space to spawn next piece
 			if (well.Collision(piece, 0, 0))
 			{
+				failState = true;
 				Exit();
 			}
 
-			// Generate random piece type
+			// Generate next piece
 			preview = GenerateRandomPiece();
-
 			preview.X = Constants.WellWidth + 5;
 			preview.Y = 5;
 		}
