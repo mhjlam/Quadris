@@ -123,7 +123,7 @@ namespace Quadris
 			GraphicsDevice.Clear(Color.Black);
 
 			DrawWell();
-			DrawTetromino(piece);
+			DrawPiece();
 			DrawPreview();
 
 			base.Draw(gameTime);
@@ -394,22 +394,32 @@ namespace Quadris
 			int y = -1 + Constants.WellCenterY - (Constants.TileSize * (Constants.WellHeight / 2)) + ((int)preview.Y - Constants.PieceTiles / 2) * Constants.TileSize;
 
 			DrawRectangle(x, y, x + Constants.PieceTiles * Constants.TileSize, y + Constants.PieceTiles * Constants.TileSize, Color.White, false);
-			DrawTetromino(preview);
-		}
 
-		private void DrawTetromino(Tetromino tetromino)
-		{
-			// Position of the tile to draw
-			int x = -1 + Constants.WellCenterX - (Constants.TileSize * (Constants.WellWidth / 2)) + ((int)tetromino.X - Constants.PieceTiles / 2) * Constants.TileSize;
-			int y = -1 + Constants.WellCenterY - (Constants.TileSize * (Constants.WellHeight / 2)) + ((int)tetromino.Y - Constants.PieceTiles / 2) * Constants.TileSize;
-			
 			// Draw filled tiles
 			for (int py = 0; py < Constants.PieceTiles; py++)
 			{
 				for (int px = 0; px < Constants.PieceTiles; px++)
 				{
-					if (tetromino.Tiles[px, py] == 0) continue;
-					DrawTile((x + py * Constants.TileSize), (y + px * Constants.TileSize), tetromino.Color);
+					if (preview.Tiles[px, py] == 0) continue;
+					DrawTile((x + py * Constants.TileSize), (y + px * Constants.TileSize), preview.Color);
+				}
+			}
+		}
+
+		private void DrawPiece()
+		{
+			// Position of the tile to draw
+			int x = -1 + Constants.WellCenterX - (Constants.TileSize * (Constants.WellWidth / 2)) + ((int)piece.X - Constants.PieceTiles / 2) * Constants.TileSize;
+			int y = -1 + Constants.WellCenterY - (Constants.TileSize * (Constants.WellHeight / 2)) + ((int)piece.Y - Constants.PieceTiles / 2) * Constants.TileSize;
+
+			// Draw filled tiles
+			for (int py = 0; py < Constants.PieceTiles; py++)
+			{
+				for (int px = 0; px < Constants.PieceTiles; px++)
+				{
+					if (piece.Tiles[py, px] == 0) continue;
+					if (piece.Y - (Constants.PieceTiles / 2) + py < 0) continue;
+					DrawTile((x + px * Constants.TileSize), (y + py * Constants.TileSize), piece.Color);
 				}
 			}
 		}
