@@ -6,6 +6,5 @@ A nearly-finished Tetris clone.
 
 ## More stuff to add
 
-- Title screen (play / exit)
 - Highscores
 - Better graphics (tetromino sprites, nicer overlay, line clear animation)
