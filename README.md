@@ -1,6 +1,6 @@
 # Quadris
 
-An unfinished Tetris game.
+A nearly-finished Tetris clone.
 
 <img src="Quadris.png" width="320">
 
