@@ -164,11 +164,11 @@ namespace Quadris
 					{
 						if (keyState.IsKeyDown(Keys.Down) && !prevKeyState.IsKeyDown(Keys.Down))
 						{
-							menuButton = ((int)menuButton + 1 > Enum.GetNames(typeof(MenuButton)).Length) ? menuButton = 0 : menuButton + 1;
+							menuButton = ((int)menuButton + 1 > Enum.GetNames(typeof(MenuButton)).Length - 1) ? menuButton = MenuButton.Play : (MenuButton)(menuButton + 1);
 						}
 						else if (keyState.IsKeyDown(Keys.Up) && !prevKeyState.IsKeyDown(Keys.Up))
 						{
-							menuButton = ((int)menuButton + 1 < 0) ? menuButton = (MenuButton)Enum.GetNames(typeof(MenuButton)).Length - 1 : menuButton - 1;
+							menuButton = ((int)menuButton - 1 < 0) ? menuButton = (MenuButton)Enum.GetNames(typeof(MenuButton)).Length - 1 : (MenuButton)(menuButton - 1);
 						}
 						else if (keyState.IsKeyDown(Keys.Enter) && !prevKeyState.IsKeyDown(Keys.Enter))
 						{
@@ -562,7 +562,7 @@ namespace Quadris
 
 		private void DrawMenu()
 		{
-			Vector2 quadrisTextSize = spriteFont.MeasureString("Quadris");
+			Vector2 quadrisTextSize = spriteFont.MeasureString("Quadris") * 1.5f;
 			Vector2 playTextSize = spriteFont.MeasureString("Play");
 			Vector2 exitTextSize = spriteFont.MeasureString("Exit");
 
@@ -579,7 +579,7 @@ namespace Quadris
 						  (menuButton == MenuButton.Exit) ? Color.Red : Color.White, 2);
 
 			spriteBatch.Begin();
-			spriteBatch.DrawString(spriteFont, "Quadris", new Vector2(Constants.WellCenterX - (int)quadrisTextSize.X / 2, Constants.WellTop), Color.Red);
+			spriteBatch.DrawString(spriteFont, "Quadris", new Vector2(Constants.WellCenterX - (int)quadrisTextSize.X / 2, Constants.WellTop), Color.Red, 0, new Vector2(0, 0), 1.5f, new SpriteEffects(), 0);
 			spriteBatch.DrawString(spriteFont, "Play", new Vector2(Constants.WellCenterX - (int)playTextSize.X / 2, Constants.WellCenterY - (int)playTextSize.Y - 10), Color.White);
 			spriteBatch.DrawString(spriteFont, "Exit", new Vector2(Constants.WellCenterX - (int)exitTextSize.X / 2, Constants.WellCenterY + (int)playTextSize.Y / 2 + 10), Color.White);
 			spriteBatch.End();
