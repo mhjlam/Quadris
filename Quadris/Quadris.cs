@@ -46,6 +46,20 @@ namespace Quadris
 		};
 	}
 
+	public enum GameState
+	{
+		Menu,
+		Game,
+		Pause,
+		GameOver
+	}
+
+	public enum MenuButton
+	{
+		Play,
+		Exit
+	}
+
 	public class Quadris : Game
 	{
 		GraphicsDeviceManager graphicsDevice;
@@ -60,7 +74,6 @@ namespace Quadris
 		int level = 0;
 		int lines = 0;
 		bool newpiece = true;
-		bool gameover = false;
 
 		Random random = new Random();
 		List<int> LinesCleared = new List<int>();
@@ -72,6 +85,9 @@ namespace Quadris
 		Well well = new Well();
 		Tetromino piece = new Tetromino();
 		Tetromino preview = new Tetromino();
+
+		GameState gameState = GameState.Menu;
+		MenuButton menuButton = MenuButton.Play;
 
 		public Quadris()
 		{
@@ -85,17 +101,43 @@ namespace Quadris
 			};
 
 			Window.AllowUserResizing = false;
-			Window.Position = new Point((GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Width - graphicsDevice.PreferredBackBufferWidth) / 2 - 30, 
+			Window.Position = new Point((GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Width - graphicsDevice.PreferredBackBufferWidth) / 2 - 30,
 										(GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Height - graphicsDevice.PreferredBackBufferHeight) / 2);
+		}
 
+		public void Reset()
+		{
+			prevKeyState = Keyboard.GetState();
+			keyDownTime = new Dictionary<Keys, int>();
 			keyDownTime[Keys.Left] = 0;
 			keyDownTime[Keys.Right] = 0;
 			keyDownTime[Keys.Down] = 0;
+
+			score = 0;
+			level = 0;
+			lines = 0;
+			newpiece = true;
+
+			random = new Random();
+			LinesCleared = new List<int>();
+			gravityTimer = TimeSpan.FromSeconds(0.8);
+			gravityTime = TimeSpan.Zero;
+			clearTimer = TimeSpan.FromSeconds(0.2);
+			clearTime = TimeSpan.Zero;
+
+			well = new Well();
+			piece = new Tetromino();
+			preview = new Tetromino();
+
+			gameState = GameState.Menu;
+			menuButton = MenuButton.Play;
+
+			SpawnPiece(true);
 		}
 
 		protected override void Initialize()
 		{
-			SpawnPiece(true);
+			Reset();
 			base.Initialize();
 		}
 
@@ -114,44 +156,87 @@ namespace Quadris
 
 		protected override void Update(GameTime gameTime)
 		{
-			if (LinesCleared.Count > 0)
+			KeyboardState keyState = Keyboard.GetState();
+
+			// Exit when escape key is pressed
+			if (keyState.IsKeyDown(Keys.Escape))
 			{
-				clearTime += gameTime.ElapsedGameTime;
-
-				if (clearTime >= clearTimer)
-				{
-					well.Clear(LinesCleared);
-
-					clearTime = TimeSpan.Zero;
-					int prevLines = lines;
-					lines += LinesCleared.Count;
-
-					// Update level
-					if (lines / 10 > prevLines / 10)
-					{
-						level = Math.Min(level + 1, 29);
-						gravityTimer = TimeSpan.FromSeconds(Constants.Gravity[level] / 60.0);
-					}
-
-					// Update score
-					int multiplier = 40;
-					switch (LinesCleared.Count)
-					{
-						case 2: multiplier = 100; break;
-						case 3: multiplier = 300; break;
-						case 4: multiplier = 1200; break;
-					}
-					score += multiplier * (level + 1);
-
-					LinesCleared.Clear();
-					SpawnPiece();
-				}
+				Exit();
 			}
-			else
+
+			switch (gameState)
 			{
-				UpdateInput(gameTime);
-				UpdatePiece(gameTime);
+				case GameState.Menu:
+					{
+						if (keyState.IsKeyDown(Keys.Down) && !prevKeyState.IsKeyDown(Keys.Down))
+						{
+							menuButton = ((int)menuButton + 1 > Enum.GetNames(typeof(MenuButton)).Length) ? menuButton = 0 : menuButton + 1;
+						}
+						else if (keyState.IsKeyDown(Keys.Up) && !prevKeyState.IsKeyDown(Keys.Up))
+						{
+							menuButton = ((int)menuButton + 1 < 0) ? menuButton = (MenuButton)Enum.GetNames(typeof(MenuButton)).Length - 1 : menuButton - 1;
+						}
+						else if (keyState.IsKeyDown(Keys.Enter) && !prevKeyState.IsKeyDown(Keys.Enter))
+						{
+							switch (menuButton)
+							{
+								case MenuButton.Play:
+									gameState = GameState.Game;
+									break;
+								case MenuButton.Exit:
+									Exit();
+									break;
+							}
+						}
+						break;
+					}
+				case GameState.Game:
+					{
+						if (LinesCleared.Count > 0)
+						{
+							clearTime += gameTime.ElapsedGameTime;
+
+							if (clearTime >= clearTimer)
+							{
+								well.Clear(LinesCleared);
+
+								clearTime = TimeSpan.Zero;
+								int prevLines = lines;
+								lines += LinesCleared.Count;
+
+								// Update level
+								if (lines / 10 > prevLines / 10)
+								{
+									level = Math.Min(level + 1, 29);
+									gravityTimer = TimeSpan.FromSeconds(Constants.Gravity[level] / 60.0);
+								}
+
+								// Update score
+								int multiplier = 40;
+								switch (LinesCleared.Count)
+								{
+									case 2: multiplier = 100; break;
+									case 3: multiplier = 300; break;
+									case 4: multiplier = 1200; break;
+								}
+								score += multiplier * (level + 1);
+
+								LinesCleared.Clear();
+								SpawnPiece();
+							}
+						}
+						else
+						{
+							UpdateInput(keyState, gameTime);
+							UpdatePiece(gameTime);
+						}
+
+						break;
+					}
 			}
+
+			// Update keyboard state
+			prevKeyState = keyState;
 
 			base.Update(gameTime);
 		}
@@ -160,26 +245,30 @@ namespace Quadris
 		{
 			GraphicsDevice.Clear(Color.Black);
 
-			DrawWell();
-			DrawPiece();
-			DrawPreview();
-			DrawOverlay();
+			switch (gameState)
+			{
+				case GameState.Menu:
+					{
+						DrawMenu();
+						break;
+					}
+				case GameState.Game:
+					{
+						DrawWell();
+						DrawPiece();
+						DrawPreview();
+						DrawOverlay();
+						break;
+					}
+			}
 
 			base.Draw(gameTime);
 		}
 
 
-		private void UpdateInput(GameTime gameTime)
+		private void UpdateInput(KeyboardState keyboardState, GameTime gameTime)
 		{
-			KeyboardState newState = Keyboard.GetState();
-
-			// Exit when escape key is pressed
-			if (newState.IsKeyDown(Keys.Escape))
-			{
-				Exit();
-			}
-			
-			if (newState.IsKeyDown(Keys.Left))
+			if (keyboardState.IsKeyDown(Keys.Left))
 			{
 				if (!prevKeyState.IsKeyDown(Keys.Left))
 				{
@@ -204,7 +293,7 @@ namespace Quadris
 					}
 				}
 			}
-			else if (newState.IsKeyDown(Keys.Right))
+			else if (keyboardState.IsKeyDown(Keys.Right))
 			{
 				if (!prevKeyState.IsKeyDown(Keys.Right))
 				{
@@ -230,7 +319,7 @@ namespace Quadris
 			}
 
 			// Soft drop
-			else if (newState.IsKeyDown(Keys.Down))
+			else if (keyboardState.IsKeyDown(Keys.Down))
 			{
 				if (!prevKeyState.IsKeyDown(Keys.Down))
 				{
@@ -262,7 +351,7 @@ namespace Quadris
 				}
 			}
 
-			if (newState.IsKeyDown(Keys.Z) && !prevKeyState.IsKeyDown(Keys.Z))
+			if (keyboardState.IsKeyDown(Keys.Z) && !prevKeyState.IsKeyDown(Keys.Z))
 			{
 				Tetromino rotated = piece.Copy();
 				rotated.Tiles = piece.Rotate();
@@ -287,7 +376,7 @@ namespace Quadris
 			}
 
 			// Hard drop
-			if (newState.IsKeyDown(Keys.X) && !prevKeyState.IsKeyDown(Keys.X))
+			if (keyboardState.IsKeyDown(Keys.X) && !prevKeyState.IsKeyDown(Keys.X))
 			{
 				while (!well.Collision(piece))
 				{
@@ -297,9 +386,6 @@ namespace Quadris
 				piece.Y--;
 				gravityTime = gravityTimer;
 			}
-
-			// Update keyboard state
-			prevKeyState = newState;
 		}
 
 		private void UpdatePiece(GameTime gameTime)
@@ -395,8 +481,9 @@ namespace Quadris
 			// Fail state occurs when there is no space to spawn next piece
 			if (well.Collision(piece, 0, 0))
 			{
-				gameover = true;
-				Exit();
+				gameState = GameState.Menu;
+				Reset();
+				//Exit();
 			}
 
 			// Generate next piece
@@ -408,8 +495,8 @@ namespace Quadris
 		private void DrawWell()
 		{
 			// Draw board boundaries
-			DrawRectangle(Constants.WellLeft - 2, Constants.WellTop - 1, Constants.WellRight, Constants.WellBottom, Color.White, false);
-			
+			DrawRectangle(Constants.WellLeft - 2, Constants.WellTop - 1, Constants.WellRight, Constants.WellBottom, Color.White, 1);
+
 			// Draw filled board tiles
 			for (int i = 0; i < Constants.WellWidth; i++)
 			{
@@ -429,7 +516,7 @@ namespace Quadris
 			int x = -1 + Constants.WellCenterX - (Constants.TileSize * (Constants.WellWidth / 2)) + ((int)preview.X - Constants.PieceTiles / 2) * Constants.TileSize;
 			int y = -1 + Constants.WellCenterY - (Constants.TileSize * (Constants.WellHeight / 2)) + ((int)preview.Y - Constants.PieceTiles / 2) * Constants.TileSize;
 
-			DrawRectangle(x, y, x + Constants.PieceTiles * Constants.TileSize, y + Constants.PieceTiles * Constants.TileSize, Color.White, false);
+			DrawRectangle(x, y, x + Constants.PieceTiles * Constants.TileSize, y + Constants.PieceTiles * Constants.TileSize, Color.White, 1);
 
 			// Draw filled tiles
 			for (int py = 0; py < Constants.PieceTiles; py++)
@@ -473,18 +560,41 @@ namespace Quadris
 			}
 		}
 
+		private void DrawMenu()
+		{
+			Vector2 playTextSize = spriteFont.MeasureString("Play");
+			Vector2 exitTextSize = spriteFont.MeasureString("Exit");
+
+			DrawRectangle(Constants.WellCenterX - 10 - (int)playTextSize.X / 2,
+						  Constants.WellCenterY - 10 - (int)playTextSize.Y - 10,
+						  Constants.WellCenterX + 10 + (int)playTextSize.X / 2,
+						  Constants.WellCenterY + 10 - (int)playTextSize.Y / 2 - 10,
+						  (menuButton == MenuButton.Play) ? Color.Red : Color.White, 2);
+
+			DrawRectangle(Constants.WellCenterX - 10 - (int)playTextSize.X / 2,
+						  Constants.WellCenterY - 10 + (int)playTextSize.Y / 2 + 10,
+						  Constants.WellCenterX + 10 + (int)playTextSize.X / 2,
+						  Constants.WellCenterY + 10 + (int)playTextSize.Y + 10,
+						  (menuButton == MenuButton.Exit) ? Color.Red : Color.White, 2);
+
+			spriteBatch.Begin();
+			spriteBatch.DrawString(spriteFont, "Play", new Vector2(Constants.WellCenterX - (int)playTextSize.X / 2, Constants.WellCenterY - (int)playTextSize.Y - 10), Color.White);
+			spriteBatch.DrawString(spriteFont, "Exit", new Vector2(Constants.WellCenterX - (int)exitTextSize.X / 2, Constants.WellCenterY + (int)playTextSize.Y / 2 + 10), Color.White);
+			spriteBatch.End();
+		}
+
 		private void DrawTile(int left, int top, Color color)
 		{
 			DrawRectangle(left, top, left + Constants.TileSize - 1, top + Constants.TileSize - 1, color);
 		}
 
-		private void DrawRectangle(int left, int top, int right, int bottom, Color color, bool solid = true)
+		private void DrawRectangle(int left, int top, int right, int bottom, Color color, int thickness = 0)
 		{
 			tileSurface.SetData(new Color[] { color });
 
 			Rectangle rectangle = new Rectangle(left, top, right - left, bottom - top);
 
-			if (solid)
+			if (thickness == 0) // solid
 			{
 				spriteBatch.Begin();
 				spriteBatch.Draw(tileSurface, rectangle, color);
@@ -493,10 +603,10 @@ namespace Quadris
 			else
 			{
 				spriteBatch.Begin();
-				spriteBatch.Draw(tileSurface, new Rectangle(rectangle.X, rectangle.Y, rectangle.Width, 1), color);
-				spriteBatch.Draw(tileSurface, new Rectangle(rectangle.X, rectangle.Y, 1, rectangle.Height), color);
-				spriteBatch.Draw(tileSurface, new Rectangle(rectangle.X + rectangle.Width - 1, rectangle.Y, 1, rectangle.Height), color);
-				spriteBatch.Draw(tileSurface, new Rectangle(rectangle.X, rectangle.Y + rectangle.Height - 1, rectangle.Width, 1), color);
+				spriteBatch.Draw(tileSurface, new Rectangle(rectangle.X, rectangle.Y, rectangle.Width, thickness), color);
+				spriteBatch.Draw(tileSurface, new Rectangle(rectangle.X, rectangle.Y, thickness, rectangle.Height), color);
+				spriteBatch.Draw(tileSurface, new Rectangle(rectangle.X + rectangle.Width - thickness, rectangle.Y, thickness, rectangle.Height), color);
+				spriteBatch.Draw(tileSurface, new Rectangle(rectangle.X, rectangle.Y + rectangle.Height - thickness, rectangle.Width, thickness), color);
 				spriteBatch.End();
 			}
 		}
