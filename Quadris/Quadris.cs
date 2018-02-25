@@ -158,12 +158,6 @@ namespace Quadris
 		{
 			KeyboardState keyState = Keyboard.GetState();
 
-			// Exit when escape key is pressed
-			if (keyState.IsKeyDown(Keys.Escape))
-			{
-				Exit();
-			}
-
 			switch (gameState)
 			{
 				case GameState.Menu:
@@ -266,9 +260,16 @@ namespace Quadris
 		}
 
 
-		private void UpdateInput(KeyboardState keyboardState, GameTime gameTime)
+		private void UpdateInput(KeyboardState keyState, GameTime gameTime)
 		{
-			if (keyboardState.IsKeyDown(Keys.Left))
+			if (keyState.IsKeyDown(Keys.Escape))
+			{
+				gameState = GameState.Menu;
+				Reset();
+				return;
+			}
+
+			if (keyState.IsKeyDown(Keys.Left))
 			{
 				if (!prevKeyState.IsKeyDown(Keys.Left))
 				{
@@ -293,7 +294,7 @@ namespace Quadris
 					}
 				}
 			}
-			else if (keyboardState.IsKeyDown(Keys.Right))
+			else if (keyState.IsKeyDown(Keys.Right))
 			{
 				if (!prevKeyState.IsKeyDown(Keys.Right))
 				{
@@ -319,7 +320,7 @@ namespace Quadris
 			}
 
 			// Soft drop
-			else if (keyboardState.IsKeyDown(Keys.Down))
+			else if (keyState.IsKeyDown(Keys.Down))
 			{
 				if (!prevKeyState.IsKeyDown(Keys.Down))
 				{
@@ -351,7 +352,7 @@ namespace Quadris
 				}
 			}
 
-			if (keyboardState.IsKeyDown(Keys.Z) && !prevKeyState.IsKeyDown(Keys.Z))
+			if (keyState.IsKeyDown(Keys.Z) && !prevKeyState.IsKeyDown(Keys.Z))
 			{
 				Tetromino rotated = piece.Copy();
 				rotated.Tiles = piece.Rotate();
@@ -376,7 +377,7 @@ namespace Quadris
 			}
 
 			// Hard drop
-			if (keyboardState.IsKeyDown(Keys.X) && !prevKeyState.IsKeyDown(Keys.X))
+			if (keyState.IsKeyDown(Keys.X) && !prevKeyState.IsKeyDown(Keys.X))
 			{
 				while (!well.Collision(piece))
 				{
@@ -483,7 +484,6 @@ namespace Quadris
 			{
 				gameState = GameState.Menu;
 				Reset();
-				//Exit();
 			}
 
 			// Generate next piece
@@ -562,6 +562,7 @@ namespace Quadris
 
 		private void DrawMenu()
 		{
+			Vector2 quadrisTextSize = spriteFont.MeasureString("Quadris");
 			Vector2 playTextSize = spriteFont.MeasureString("Play");
 			Vector2 exitTextSize = spriteFont.MeasureString("Exit");
 
@@ -578,6 +579,7 @@ namespace Quadris
 						  (menuButton == MenuButton.Exit) ? Color.Red : Color.White, 2);
 
 			spriteBatch.Begin();
+			spriteBatch.DrawString(spriteFont, "Quadris", new Vector2(Constants.WellCenterX - (int)quadrisTextSize.X / 2, Constants.WellTop), Color.Red);
 			spriteBatch.DrawString(spriteFont, "Play", new Vector2(Constants.WellCenterX - (int)playTextSize.X / 2, Constants.WellCenterY - (int)playTextSize.Y - 10), Color.White);
 			spriteBatch.DrawString(spriteFont, "Exit", new Vector2(Constants.WellCenterX - (int)exitTextSize.X / 2, Constants.WellCenterY + (int)playTextSize.Y / 2 + 10), Color.White);
 			spriteBatch.End();
