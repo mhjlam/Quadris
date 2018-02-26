@@ -49,6 +49,7 @@ namespace Quadris
 	public enum GameState
 	{
 		Menu,
+		Highscores,
 		Game,
 		Pause,
 		GameOver
@@ -57,6 +58,7 @@ namespace Quadris
 	public enum MenuButton
 	{
 		Play,
+		Highscores,
 		Exit
 	}
 
@@ -161,29 +163,40 @@ namespace Quadris
 			switch (gameState)
 			{
 				case GameState.Menu:
+				{
+					if (keyState.IsKeyDown(Keys.Down) && !prevKeyState.IsKeyDown(Keys.Down))
 					{
-						if (keyState.IsKeyDown(Keys.Down) && !prevKeyState.IsKeyDown(Keys.Down))
-						{
-							menuButton = ((int)menuButton + 1 > Enum.GetNames(typeof(MenuButton)).Length - 1) ? menuButton = MenuButton.Play : (MenuButton)(menuButton + 1);
-						}
-						else if (keyState.IsKeyDown(Keys.Up) && !prevKeyState.IsKeyDown(Keys.Up))
-						{
-							menuButton = ((int)menuButton - 1 < 0) ? menuButton = (MenuButton)Enum.GetNames(typeof(MenuButton)).Length - 1 : (MenuButton)(menuButton - 1);
-						}
-						else if (keyState.IsKeyDown(Keys.Enter) && !prevKeyState.IsKeyDown(Keys.Enter))
-						{
-							switch (menuButton)
-							{
-								case MenuButton.Play:
-									gameState = GameState.Game;
-									break;
-								case MenuButton.Exit:
-									Exit();
-									break;
-							}
-						}
-						break;
+						menuButton = ((int)menuButton + 1 > Enum.GetNames(typeof(MenuButton)).Length - 1) ? menuButton = MenuButton.Play : (MenuButton)(menuButton + 1);
 					}
+					else if (keyState.IsKeyDown(Keys.Up) && !prevKeyState.IsKeyDown(Keys.Up))
+					{
+						menuButton = ((int)menuButton - 1 < 0) ? menuButton = (MenuButton)Enum.GetNames(typeof(MenuButton)).Length - 1 : (MenuButton)(menuButton - 1);
+					}
+					else if (keyState.IsKeyDown(Keys.Enter) && !prevKeyState.IsKeyDown(Keys.Enter))
+					{
+						switch (menuButton)
+						{
+							case MenuButton.Play:
+								gameState = GameState.Game;
+								break;
+							case MenuButton.Highscores:
+								gameState = GameState.Highscores;
+								break;
+							case MenuButton.Exit:
+								Exit();
+								break;
+						}
+					}
+					break;
+				}
+				case GameState.Highscores:
+				{
+					if (keyState.IsKeyDown(Keys.Enter) && !prevKeyState.IsKeyDown(Keys.Enter))
+					{
+						gameState = GameState.Menu;
+					}
+					break;
+				}
 				case GameState.Game:
 					{
 						if (LinesCleared.Count > 0)
@@ -242,18 +255,23 @@ namespace Quadris
 			switch (gameState)
 			{
 				case GameState.Menu:
-					{
-						DrawMenu();
-						break;
-					}
+				{
+					DrawMenu();
+					break;
+				}
+				case GameState.Highscores:
+				{
+					DrawHighscores();
+					break;
+				}
 				case GameState.Game:
-					{
-						DrawWell();
-						DrawPiece();
-						DrawPreview();
-						DrawOverlay();
-						break;
-					}
+				{
+					DrawWell();
+					DrawPiece();
+					DrawPreview();
+					DrawOverlay();
+					break;
+				}
 			}
 
 			base.Draw(gameTime);
@@ -564,25 +582,79 @@ namespace Quadris
 		{
 			Vector2 quadrisTextSize = spriteFont.MeasureString("Quadris") * 1.5f;
 			Vector2 playTextSize = spriteFont.MeasureString("Play");
+			Vector2 highscoresTextSize = spriteFont.MeasureString("Highscores");
 			Vector2 exitTextSize = spriteFont.MeasureString("Exit");
 
-			DrawRectangle(Constants.WellCenterX - 10 - (int)playTextSize.X / 2,
-						  Constants.WellCenterY - 10 - (int)playTextSize.Y - 10,
-						  Constants.WellCenterX + 10 + (int)playTextSize.X / 2,
-						  Constants.WellCenterY + 10 - (int)playTextSize.Y / 2 - 10,
+			Vector2 maxTextSize = highscoresTextSize;
+
+			DrawRectangle(Constants.WellCenterX - 10 - (int)maxTextSize.X / 2,
+						  Constants.WellCenterY - 10 - (int)maxTextSize.Y - 20,
+						  Constants.WellCenterX + 10 + (int)maxTextSize.X / 2,
+						  Constants.WellCenterY + 10 - (int)maxTextSize.Y / 2 - 20,
 						  (menuButton == MenuButton.Play) ? Color.Red : Color.White, 2);
 
-			DrawRectangle(Constants.WellCenterX - 10 - (int)playTextSize.X / 2,
-						  Constants.WellCenterY - 10 + (int)playTextSize.Y / 2 + 10,
-						  Constants.WellCenterX + 10 + (int)playTextSize.X / 2,
-						  Constants.WellCenterY + 10 + (int)playTextSize.Y + 10,
+			DrawRectangle(Constants.WellCenterX - 10 - (int)maxTextSize.X / 2,
+						  Constants.WellCenterY - 10 + (int)maxTextSize.Y / 2,
+						  Constants.WellCenterX + 10 + (int)maxTextSize.X / 2,
+						  Constants.WellCenterY + 10 + (int)maxTextSize.Y,
+						  (menuButton == MenuButton.Highscores) ? Color.Red : Color.White, 2);
+
+			DrawRectangle(Constants.WellCenterX - 10 - (int)maxTextSize.X / 2,
+						  Constants.WellCenterY - 10 + (int)maxTextSize.Y / 2 + 40,
+						  Constants.WellCenterX + 10 + (int)maxTextSize.X / 2,
+						  Constants.WellCenterY + 10 + (int)maxTextSize.Y + 40,
 						  (menuButton == MenuButton.Exit) ? Color.Red : Color.White, 2);
 
 			spriteBatch.Begin();
 			spriteBatch.DrawString(spriteFont, "Quadris", new Vector2(Constants.WellCenterX - (int)quadrisTextSize.X / 2, Constants.WellTop), Color.Red, 0, new Vector2(0, 0), 1.5f, new SpriteEffects(), 0);
-			spriteBatch.DrawString(spriteFont, "Play", new Vector2(Constants.WellCenterX - (int)playTextSize.X / 2, Constants.WellCenterY - (int)playTextSize.Y - 10), Color.White);
-			spriteBatch.DrawString(spriteFont, "Exit", new Vector2(Constants.WellCenterX - (int)exitTextSize.X / 2, Constants.WellCenterY + (int)playTextSize.Y / 2 + 10), Color.White);
+			spriteBatch.DrawString(spriteFont, "Play", new Vector2(Constants.WellCenterX - (int)playTextSize.X / 2, Constants.WellCenterY - (int)playTextSize.Y - 20), Color.White);
+			spriteBatch.DrawString(spriteFont, "Highscores", new Vector2(Constants.WellCenterX - (int)highscoresTextSize.X / 2, Constants.WellCenterY + (int)highscoresTextSize.Y / 2), Color.White);
+			spriteBatch.DrawString(spriteFont, "Exit", new Vector2(Constants.WellCenterX - (int)exitTextSize.X / 2, Constants.WellCenterY + (int)playTextSize.Y / 2 + 40), Color.White);
 			spriteBatch.End();
+		}
+
+		private void DrawHighscores()
+		{
+			Vector2 highscoresTextSize = spriteFont.MeasureString("Highscores");
+			Vector2 backTextSize = spriteFont.MeasureString("Back");
+			Vector2 nameTextSize = spriteFont.MeasureString("Name");
+			Vector2 scoreTextSize = spriteFont.MeasureString("Score");
+			Vector2 levelTextSize = spriteFont.MeasureString("Level");
+
+			Vector2 headerTextSize = nameTextSize + scoreTextSize + levelTextSize + new Vector2(20 + 10 + 10, 0);
+
+			DrawRectangle(Constants.WellCenterX - 10 - (int)backTextSize.X / 2,
+						  Constants.WellBottom - 10 - (int)backTextSize.Y,
+						  Constants.WellCenterX + 10 + (int)backTextSize.X / 2,
+						  Constants.WellBottom + 10 - (int)backTextSize.Y / 2,
+						  Color.Red, 2);
+
+			DrawRectangle(Constants.WellCenterX - (int)headerTextSize.X / 2,
+						  Constants.WellCenterY - 55,
+						  Constants.WellCenterX + (int)headerTextSize.X / 2,
+						  Constants.WellCenterY - 25,
+						  Color.White, 2);
+
+			DrawRectangle(Constants.WellCenterX - (int)headerTextSize.X / 2,
+						  Constants.WellCenterY - 15,
+						  Constants.WellCenterX + (int)headerTextSize.X / 2,
+						  Constants.WellCenterY + 15,
+						  Color.White, 2);
+
+			DrawRectangle(Constants.WellCenterX - (int)headerTextSize.X / 2,
+						  Constants.WellCenterY + 25,
+						  Constants.WellCenterX + (int)headerTextSize.X / 2,
+						  Constants.WellCenterY + 55,
+						  Color.White, 2);
+
+			spriteBatch.Begin();
+			spriteBatch.DrawString(spriteFont, "Highscores", new Vector2(Constants.WellCenterX - (int)highscoresTextSize.X / 2, Constants.WellTop), Color.Red);
+			spriteBatch.DrawString(spriteFont, "Name", new Vector2(Constants.WellCenterX - (int)headerTextSize.X / 2 + 20, Constants.WellCenterY - 80), Color.White);
+			spriteBatch.DrawString(spriteFont, "Score", new Vector2(Constants.WellCenterX - (int)headerTextSize.X / 2 + 20 + nameTextSize.X + 10, Constants.WellCenterY - 80), Color.White);
+			spriteBatch.DrawString(spriteFont, "Level", new Vector2(Constants.WellCenterX - (int)headerTextSize.X / 2 + 20 + nameTextSize.X + 10 + scoreTextSize.X + 10, Constants.WellCenterY - 80), Color.White);
+			spriteBatch.DrawString(spriteFont, "Back", new Vector2(Constants.WellCenterX - (int)backTextSize.X / 2, Constants.WellBottom - (int)backTextSize.Y), Color.White);
+			spriteBatch.End();
+
 		}
 
 		private void DrawTile(int left, int top, Color color)
