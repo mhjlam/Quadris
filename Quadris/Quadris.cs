@@ -1,8 +1,10 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.IO;
 
 namespace Quadris
 {
@@ -62,6 +64,13 @@ namespace Quadris
 		Exit
 	}
 
+	public struct Highscore
+	{
+		public int Score;
+		public int Level;
+		public DateTime Date;
+	}
+
 	public class Quadris : Game
 	{
 		GraphicsDeviceManager graphicsDevice;
@@ -76,6 +85,8 @@ namespace Quadris
 		int level = 0;
 		int lines = 0;
 		bool newpiece = true;
+
+		List<Highscore> highScores = new List<Highscore>();
 
 		Random random = new Random();
 		List<int> LinesCleared = new List<int>();
@@ -110,10 +121,12 @@ namespace Quadris
 		public void Reset()
 		{
 			prevKeyState = Keyboard.GetState();
-			keyDownTime = new Dictionary<Keys, int>();
-			keyDownTime[Keys.Left] = 0;
-			keyDownTime[Keys.Right] = 0;
-			keyDownTime[Keys.Down] = 0;
+			keyDownTime = new Dictionary<Keys, int>
+			{
+				[Keys.Left] = 0,
+				[Keys.Right] = 0,
+				[Keys.Down] = 0
+			};
 
 			score = 0;
 			level = 0;
@@ -148,6 +161,8 @@ namespace Quadris
 			spriteBatch = new SpriteBatch(GraphicsDevice);
 			spriteFont = Content.Load<SpriteFont>("RedOctober");
 			tileSurface = new Texture2D(graphicsDevice.GraphicsDevice, 1, 1, false, SurfaceFormat.Color); // empty 1x1 color surface
+
+			LoadHighScores();
 		}
 
 		protected override void UnloadContent()
@@ -521,12 +536,15 @@ namespace Quadris
 			if (well.Collision(piece, 0, 0))
 			{
 				gameState = GameState.GameOver;
+				SaveHighScores();
 			}
-
-			// Generate next piece
-			preview = GenerateRandomPiece();
-			preview.X = Constants.WellWidth + 5;
-			preview.Y = 5;
+			else
+			{
+				// Generate next piece
+				preview = GenerateRandomPiece();
+				preview.X = Constants.WellWidth + 5;
+				preview.Y = 5;
+			}
 		}
 
 		private void DrawWell()
@@ -710,6 +728,33 @@ namespace Quadris
 				spriteBatch.Draw(tileSurface, new Rectangle(rectangle.X, rectangle.Y + rectangle.Height - thickness, rectangle.Width, thickness), color);
 				spriteBatch.End();
 			}
+		}
+
+		private void LoadHighScores()
+		{
+			// Load highscores file
+			if (File.Exists("highscores"))
+			{
+				string contents = File.ReadAllText("highscores");
+				highScores = (List<Highscore>)JsonConvert.DeserializeObject(contents, typeof(List<Highscore>));
+			}
+		}
+
+		private void SaveHighScores()
+		{
+			highScores.Add(new Highscore()
+			{
+				Score = score,
+				Level = level,
+				Date = DateTime.Now.Date
+			});
+
+			// Sort highscores by score and keep highest three
+			highScores.Sort((x, y) => x.Score.CompareTo(y.Score));
+			highScores = highScores.GetRange(0, Math.Min(highScores.Count, 3));
+
+			string contents = JsonConvert.SerializeObject(highScores);
+			File.WriteAllText("highscores", contents);
 		}
 	}
 
