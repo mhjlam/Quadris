@@ -760,7 +760,7 @@ namespace Quadris
 			});
 
 			// Sort highscores by score and keep highest three
-			highScores.Sort((x, y) => x.Score.CompareTo(y.Score));
+			highScores.Sort((x, y) => y.Score.CompareTo(x.Score));
 			highScores = highScores.GetRange(0, Math.Min(highScores.Count, 3));
 
 			string contents = JsonConvert.SerializeObject(highScores);
