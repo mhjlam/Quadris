@@ -177,11 +177,14 @@ namespace Quadris
 						switch (menuButton)
 						{
 							case MenuButton.Play:
+								Reset();
 								gameState = GameState.Game;
 								break;
+
 							case MenuButton.Highscores:
 								gameState = GameState.Highscores;
 								break;
+
 							case MenuButton.Exit:
 								Exit();
 								break;
@@ -195,51 +198,67 @@ namespace Quadris
 					{
 						gameState = GameState.Menu;
 					}
+					else if (keyState.IsKeyDown(Keys.Escape) && !prevKeyState.IsKeyDown(Keys.Escape))
+					{
+						gameState = GameState.Menu;
+					}
 					break;
 				}
 				case GameState.Game:
+				{
+					if (LinesCleared.Count > 0)
 					{
-						if (LinesCleared.Count > 0)
-						{
-							clearTime += gameTime.ElapsedGameTime;
+						clearTime += gameTime.ElapsedGameTime;
 
-							if (clearTime >= clearTimer)
+						if (clearTime >= clearTimer)
+						{
+							well.Clear(LinesCleared);
+
+							clearTime = TimeSpan.Zero;
+							int prevLines = lines;
+							lines += LinesCleared.Count;
+
+							// Update level
+							if (lines / 10 > prevLines / 10)
 							{
-								well.Clear(LinesCleared);
-
-								clearTime = TimeSpan.Zero;
-								int prevLines = lines;
-								lines += LinesCleared.Count;
-
-								// Update level
-								if (lines / 10 > prevLines / 10)
-								{
-									level = Math.Min(level + 1, 29);
-									gravityTimer = TimeSpan.FromSeconds(Constants.Gravity[level] / 60.0);
-								}
-
-								// Update score
-								int multiplier = 40;
-								switch (LinesCleared.Count)
-								{
-									case 2: multiplier = 100; break;
-									case 3: multiplier = 300; break;
-									case 4: multiplier = 1200; break;
-								}
-								score += multiplier * (level + 1);
-
-								LinesCleared.Clear();
-								SpawnPiece();
+								level = Math.Min(level + 1, 29);
+								gravityTimer = TimeSpan.FromSeconds(Constants.Gravity[level] / 60.0);
 							}
-						}
-						else
-						{
-							UpdateInput(keyState, gameTime);
-							UpdatePiece(gameTime);
-						}
 
-						break;
+							// Update score
+							int multiplier = 40;
+							switch (LinesCleared.Count)
+							{
+								case 2: multiplier = 100; break;
+								case 3: multiplier = 300; break;
+								case 4: multiplier = 1200; break;
+							}
+							score += multiplier * (level + 1);
+
+							LinesCleared.Clear();
+							SpawnPiece();
+						}
 					}
+					else
+					{
+						UpdateInput(keyState, gameTime);
+						UpdatePiece(gameTime);
+					}
+
+					break;
+				}
+				case GameState.GameOver:
+				{
+					if (keyState.IsKeyDown(Keys.Enter) && !prevKeyState.IsKeyDown(Keys.Enter))
+					{
+						gameState = GameState.Menu;
+					}
+					else if (keyState.IsKeyDown(Keys.Escape) && !prevKeyState.IsKeyDown(Keys.Escape))
+					{
+						gameState = GameState.Menu;
+					}
+					break;
+				}
 			}
 
 			// Update keyboard state
@@ -265,6 +284,7 @@ namespace Quadris
 					break;
 				}
 				case GameState.Game:
+				case GameState.GameOver:
 				{
 					DrawWell();
 					DrawPiece();
@@ -500,8 +520,7 @@ namespace Quadris
 			// Fail state occurs when there is no space to spawn next piece
 			if (well.Collision(piece, 0, 0))
 			{
-				gameState = GameState.Menu;
-				Reset();
+				gameState = GameState.GameOver;
 			}
 
 			// Generate next piece
@@ -512,8 +531,10 @@ namespace Quadris
 
 		private void DrawWell()
 		{
+			bool gameOver = (gameState == GameState.GameOver);
+
 			// Draw board boundaries
-			DrawRectangle(Constants.WellLeft - 2, Constants.WellTop - 1, Constants.WellRight, Constants.WellBottom, Color.White, 1);
+			DrawRectangle(Constants.WellLeft - 2, Constants.WellTop - 1, Constants.WellRight, Constants.WellBottom, (gameOver) ? Color.Red : Color.White, 1);
 
 			// Draw filled board tiles
 			for (int i = 0; i < Constants.WellWidth; i++)
@@ -523,7 +544,7 @@ namespace Quadris
 					// Draw rectangle if tile is filled
 					if (well.Tile(i, j) != 0)
 					{
-						DrawTile((Constants.WellLeft - 1 + i * Constants.TileSize), (Constants.WellTop - 1 + j * Constants.TileSize), well.TileColor(i, j));
+						DrawTile((Constants.WellLeft - 1 + i * Constants.TileSize), (Constants.WellTop - 1 + j * Constants.TileSize), well.TileColor(i, j) * (gameOver ? 0.5f : 1.0f));
 					}
 				}
 			}
@@ -531,10 +552,12 @@ namespace Quadris
 
 		private void DrawPreview()
 		{
+			bool gameOver = (gameState == GameState.GameOver);
+
 			int x = -1 + Constants.WellCenterX - (Constants.TileSize * (Constants.WellWidth / 2)) + ((int)preview.X - Constants.PieceTiles / 2) * Constants.TileSize;
 			int y = -1 + Constants.WellCenterY - (Constants.TileSize * (Constants.WellHeight / 2)) + ((int)preview.Y - Constants.PieceTiles / 2) * Constants.TileSize;
 
-			DrawRectangle(x, y, x + Constants.PieceTiles * Constants.TileSize, y + Constants.PieceTiles * Constants.TileSize, Color.White, 1);
+			DrawRectangle(x, y, x + Constants.PieceTiles * Constants.TileSize, y + Constants.PieceTiles * Constants.TileSize, (gameOver) ? Color.Red : Color.White, 1);
 
 			// Draw filled tiles
 			for (int py = 0; py < Constants.PieceTiles; py++)
@@ -542,26 +565,30 @@ namespace Quadris
 				for (int px = 0; px < Constants.PieceTiles; px++)
 				{
 					if (preview.Tiles[px, py] == 0) continue;
-					DrawTile((x + py * Constants.TileSize), (y + px * Constants.TileSize), preview.Color);
+					DrawTile((x + py * Constants.TileSize), (y + px * Constants.TileSize), preview.Color * (gameOver ? 0.5f : 1.0f));
 				}
 			}
 		}
 
 		private void DrawOverlay()
 		{
+			bool gameOver = (gameState == GameState.GameOver);
+
 			int x = -1 + Constants.WellCenterX - (Constants.TileSize * (Constants.WellWidth / 2)) + ((int)preview.X - Constants.PieceTiles / 2) * Constants.TileSize;
 			int y = -1 + Constants.WellCenterY - (Constants.TileSize * (Constants.WellHeight / 2)) + ((int)preview.Y - Constants.PieceTiles / 2) * Constants.TileSize;
 			y += Constants.PieceTiles * Constants.TileSize + 10;
 
 			spriteBatch.Begin();
-			spriteBatch.DrawString(spriteFont, "Score: " + score, new Vector2(x, y), Color.White);
-			spriteBatch.DrawString(spriteFont, "Level: " + level, new Vector2(x, y + 20), Color.White);
-			spriteBatch.DrawString(spriteFont, "Lines: " + lines, new Vector2(x, y + 40), Color.White);
+			spriteBatch.DrawString(spriteFont, "Score: " + score, new Vector2(x, y), (gameOver) ? Color.Red : Color.White);
+			spriteBatch.DrawString(spriteFont, "Level: " + level, new Vector2(x, y + 20), (gameOver) ? Color.Red : Color.White);
+			spriteBatch.DrawString(spriteFont, "Lines: " + lines, new Vector2(x, y + 40), (gameOver) ? Color.Red : Color.White);
 			spriteBatch.End();
 		}
 
 		private void DrawPiece()
 		{
+			bool gameOver = (gameState == GameState.GameOver);
+
 			// Position of the tile to draw
 			int x = -1 + Constants.WellCenterX - (Constants.TileSize * (Constants.WellWidth / 2)) + ((int)piece.X - Constants.PieceTiles / 2) * Constants.TileSize;
 			int y = -1 + Constants.WellCenterY - (Constants.TileSize * (Constants.WellHeight / 2)) + ((int)piece.Y - Constants.PieceTiles / 2) * Constants.TileSize;
@@ -573,7 +600,7 @@ namespace Quadris
 				{
 					if (piece.Tiles[py, px] == 0) continue;
 					if (piece.Y - (Constants.PieceTiles / 2) + py < 0) continue;
-					DrawTile((x + px * Constants.TileSize), (y + py * Constants.TileSize), piece.Color);
+					DrawTile((x + px * Constants.TileSize), (y + py * Constants.TileSize), piece.Color * (gameOver ? 0.75f : 1.0f));
 				}
 			}
 		}
@@ -617,11 +644,11 @@ namespace Quadris
 		{
 			Vector2 highscoresTextSize = spriteFont.MeasureString("Highscores");
 			Vector2 backTextSize = spriteFont.MeasureString("Back");
-			Vector2 nameTextSize = spriteFont.MeasureString("Name");
 			Vector2 scoreTextSize = spriteFont.MeasureString("Score");
 			Vector2 levelTextSize = spriteFont.MeasureString("Level");
+			Vector2 dateTextSize = spriteFont.MeasureString("Date");
 
-			Vector2 headerTextSize = nameTextSize + scoreTextSize + levelTextSize + new Vector2(20 + 10 + 10, 0);
+			Vector2 headerTextSize = scoreTextSize + levelTextSize + dateTextSize + new Vector2(10 + 10 + 10, 0);
 
 			DrawRectangle(Constants.WellCenterX - 10 - (int)backTextSize.X / 2,
 						  Constants.WellBottom - 10 - (int)backTextSize.Y,
@@ -629,29 +656,29 @@ namespace Quadris
 						  Constants.WellBottom + 10 - (int)backTextSize.Y / 2,
 						  Color.Red, 2);
 
-			DrawRectangle(Constants.WellCenterX - (int)headerTextSize.X / 2,
+			DrawRectangle(Constants.WellCenterX - (int)headerTextSize.X / 2 - 10,
 						  Constants.WellCenterY - 55,
-						  Constants.WellCenterX + (int)headerTextSize.X / 2,
+						  Constants.WellCenterX + (int)headerTextSize.X / 2 + 10,
 						  Constants.WellCenterY - 25,
 						  Color.White, 2);
 
-			DrawRectangle(Constants.WellCenterX - (int)headerTextSize.X / 2,
+			DrawRectangle(Constants.WellCenterX - (int)headerTextSize.X / 2 - 10,
 						  Constants.WellCenterY - 15,
-						  Constants.WellCenterX + (int)headerTextSize.X / 2,
+						  Constants.WellCenterX + (int)headerTextSize.X / 2 + 10,
 						  Constants.WellCenterY + 15,
 						  Color.White, 2);
 
-			DrawRectangle(Constants.WellCenterX - (int)headerTextSize.X / 2,
+			DrawRectangle(Constants.WellCenterX - (int)headerTextSize.X / 2 - 10,
 						  Constants.WellCenterY + 25,
-						  Constants.WellCenterX + (int)headerTextSize.X / 2,
+						  Constants.WellCenterX + (int)headerTextSize.X / 2 + 10,
 						  Constants.WellCenterY + 55,
 						  Color.White, 2);
 
 			spriteBatch.Begin();
 			spriteBatch.DrawString(spriteFont, "Highscores", new Vector2(Constants.WellCenterX - (int)highscoresTextSize.X / 2, Constants.WellTop), Color.Red);
-			spriteBatch.DrawString(spriteFont, "Name", new Vector2(Constants.WellCenterX - (int)headerTextSize.X / 2 + 20, Constants.WellCenterY - 80), Color.White);
-			spriteBatch.DrawString(spriteFont, "Score", new Vector2(Constants.WellCenterX - (int)headerTextSize.X / 2 + 20 + nameTextSize.X + 10, Constants.WellCenterY - 80), Color.White);
-			spriteBatch.DrawString(spriteFont, "Level", new Vector2(Constants.WellCenterX - (int)headerTextSize.X / 2 + 20 + nameTextSize.X + 10 + scoreTextSize.X + 10, Constants.WellCenterY - 80), Color.White);
+			spriteBatch.DrawString(spriteFont, "Score", new Vector2(Constants.WellCenterX - (int)headerTextSize.X / 2 + 10, Constants.WellCenterY - 80), Color.White);
+			spriteBatch.DrawString(spriteFont, "Level", new Vector2(Constants.WellCenterX - (int)headerTextSize.X / 2 + 10 + scoreTextSize.X + 10, Constants.WellCenterY - 80), Color.White);
+			spriteBatch.DrawString(spriteFont, "Date", new Vector2(Constants.WellCenterX - (int)headerTextSize.X / 2 + 10 + scoreTextSize.X + 10 + levelTextSize.X + 10, Constants.WellCenterY - 80), Color.White);
 			spriteBatch.DrawString(spriteFont, "Back", new Vector2(Constants.WellCenterX - (int)backTextSize.X / 2, Constants.WellBottom - (int)backTextSize.Y), Color.White);
 			spriteBatch.End();
 
