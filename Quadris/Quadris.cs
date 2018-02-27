@@ -538,13 +538,11 @@ namespace Quadris
 				gameState = GameState.GameOver;
 				SaveHighScores();
 			}
-			else
-			{
-				// Generate next piece
-				preview = GenerateRandomPiece();
-				preview.X = Constants.WellWidth + 5;
-				preview.Y = 5;
-			}
+
+			// Generate next piece
+			preview = GenerateRandomPiece();
+			preview.X = Constants.WellWidth + 5;
+			preview.Y = 5;
 		}
 
 		private void DrawWell()
@@ -666,13 +664,7 @@ namespace Quadris
 			Vector2 levelTextSize = spriteFont.MeasureString("Level");
 			Vector2 dateTextSize = spriteFont.MeasureString("Date");
 
-			Vector2 headerTextSize = scoreTextSize + levelTextSize + dateTextSize + new Vector2(10 + 10 + 10, 0);
-
-			DrawRectangle(Constants.WellCenterX - 10 - (int)backTextSize.X / 2,
-						  Constants.WellBottom - 10 - (int)backTextSize.Y,
-						  Constants.WellCenterX + 10 + (int)backTextSize.X / 2,
-						  Constants.WellBottom + 10 - (int)backTextSize.Y / 2,
-						  Color.Red, 2);
+			Vector2 headerTextSize = scoreTextSize + levelTextSize + dateTextSize + new Vector2(10 + 10, 0);
 
 			DrawRectangle(Constants.WellCenterX - (int)headerTextSize.X / 2 - 10,
 						  Constants.WellCenterY - 55,
@@ -692,12 +684,27 @@ namespace Quadris
 						  Constants.WellCenterY + 55,
 						  Color.White, 2);
 
+			DrawRectangle(Constants.WellCenterX - 10 - (int)backTextSize.X / 2,
+						  Constants.WellBottom - 10 - (int)backTextSize.Y,
+						  Constants.WellCenterX + 10 + (int)backTextSize.X / 2,
+						  Constants.WellBottom + 10 - (int)backTextSize.Y / 2,
+						  Color.Red, 2);
+
 			spriteBatch.Begin();
 			spriteBatch.DrawString(spriteFont, "Highscores", new Vector2(Constants.WellCenterX - (int)highscoresTextSize.X / 2, Constants.WellTop), Color.Red);
-			spriteBatch.DrawString(spriteFont, "Score", new Vector2(Constants.WellCenterX - (int)headerTextSize.X / 2 + 10, Constants.WellCenterY - 80), Color.White);
-			spriteBatch.DrawString(spriteFont, "Level", new Vector2(Constants.WellCenterX - (int)headerTextSize.X / 2 + 10 + scoreTextSize.X + 10, Constants.WellCenterY - 80), Color.White);
-			spriteBatch.DrawString(spriteFont, "Date", new Vector2(Constants.WellCenterX - (int)headerTextSize.X / 2 + 10 + scoreTextSize.X + 10 + levelTextSize.X + 10, Constants.WellCenterY - 80), Color.White);
+			spriteBatch.DrawString(spriteFont, "Score", new Vector2(Constants.WellCenterX - (int)headerTextSize.X / 2, Constants.WellCenterY - 80), Color.White);
+			spriteBatch.DrawString(spriteFont, "Level", new Vector2(Constants.WellCenterX - (int)headerTextSize.X / 2 + scoreTextSize.X + 10, Constants.WellCenterY - 80), Color.White);
+			spriteBatch.DrawString(spriteFont, "Date", new Vector2(Constants.WellCenterX - (int)headerTextSize.X / 2 + scoreTextSize.X + 10 + levelTextSize.X + 10, Constants.WellCenterY - 80), Color.White);
 			spriteBatch.DrawString(spriteFont, "Back", new Vector2(Constants.WellCenterX - (int)backTextSize.X / 2, Constants.WellBottom - (int)backTextSize.Y), Color.White);
+			
+			for (int i = 0; i < highScores.Count; ++i)
+			{
+				Highscore hs = highScores[i];
+				string text = string.Format("{0,8}    {1,2}    {2,10}", hs.Score, hs.Level, hs.Date.Date.ToString("yyyy/MM/dd"));
+
+				spriteBatch.DrawString(spriteFont, text, new Vector2(Constants.WellCenterX - (int)headerTextSize.X / 2 + 10, Constants.WellCenterY - 45 + i * 40), Color.White, 0f, Vector2.Zero, 0.75f, SpriteEffects.None, 0f);
+			}
+
 			spriteBatch.End();
 
 		}
@@ -737,6 +744,9 @@ namespace Quadris
 			{
 				string contents = File.ReadAllText("highscores");
 				highScores = (List<Highscore>)JsonConvert.DeserializeObject(contents, typeof(List<Highscore>));
+
+				// Sort highscores by score
+				highScores.Sort((x, y) => y.Score.CompareTo(x.Score));
 			}
 		}
 
