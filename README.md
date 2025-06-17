@@ -4,12 +4,12 @@ A Tetris clone inspired by the NES version, Quadris features an authentic scorin
 
 <table>
   <tr>
-    <td align="center"><img src="Images/Quadris1.png" alt="Main Menu" width="300"/><br>Main Menu</td>
-    <td align="center"><img src="Images/Quadris2.png" alt="In-Game" width="300"/><br>In-Game</td>
+    <td align="center"><img src="images/Quadris1.png" alt="Main Menu" width="300"/><br>Main Menu</td>
+    <td align="center"><img src="images/Quadris2.png" alt="In-Game" width="300"/><br>In-Game</td>
   </tr>
   <tr>
-    <td align="center"><img src="Images/Quadris3.png" alt="Game Over Screen" width="300"/><br>Game Over Screen</td>
-    <td align="center"><img src="Images/Quadris4.png" alt="Highscores" width="300"/><br>Highscores</td>
+    <td align="center"><img src="images/Quadris3.png" alt="Game Over Screen" width="300"/><br>Game Over Screen</td>
+    <td align="center"><img src="images/Quadris4.png" alt="Highscores" width="300"/><br>Highscores</td>
   </tr>
 </table>
 
