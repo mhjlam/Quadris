@@ -1,31 +1,25 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.27130.2026
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36119.2 d17.14
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Quadris", "Quadris\Quadris.csproj", "{A254B0B0-7016-4CAF-A55D-E4164939E94D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Quadris", "Quadris.csproj", "{C65B9E00-D013-4DBD-9674-7D8865E7416D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
-		Debug|x64 = Debug|x64
-		Debug|x86 = Debug|x86
-		Release|x64 = Release|x64
-		Release|x86 = Release|x86
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{A254B0B0-7016-4CAF-A55D-E4164939E94D}.Debug|x64.ActiveCfg = Debug|x64
-		{A254B0B0-7016-4CAF-A55D-E4164939E94D}.Debug|x64.Build.0 = Debug|x64
-		{A254B0B0-7016-4CAF-A55D-E4164939E94D}.Debug|x86.ActiveCfg = Debug|x86
-		{A254B0B0-7016-4CAF-A55D-E4164939E94D}.Debug|x86.Build.0 = Debug|x86
-		{A254B0B0-7016-4CAF-A55D-E4164939E94D}.Release|x64.ActiveCfg = Release|x64
-		{A254B0B0-7016-4CAF-A55D-E4164939E94D}.Release|x64.Build.0 = Release|x64
-		{A254B0B0-7016-4CAF-A55D-E4164939E94D}.Release|x86.ActiveCfg = Release|x86
-		{A254B0B0-7016-4CAF-A55D-E4164939E94D}.Release|x86.Build.0 = Release|x86
+		{C65B9E00-D013-4DBD-9674-7D8865E7416D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C65B9E00-D013-4DBD-9674-7D8865E7416D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C65B9E00-D013-4DBD-9674-7D8865E7416D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C65B9E00-D013-4DBD-9674-7D8865E7416D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {8BBB2515-4060-4EA5-B4D6-A74B9DDAF21E}
+		SolutionGuid = {167612A3-8C00-4138-BB95-490C08370A55}
 	EndGlobalSection
 EndGlobal
