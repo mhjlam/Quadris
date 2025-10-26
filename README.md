@@ -1,8 +1,12 @@
 # Quadris
 
-A Tetris clone inspired by the NES version, Quadris features an authentic scoring system, level progression, and gravity rules, a clean UI, and persistent highscores.
+Tetris clone inspired by the NES version.
 
-![Quadris](media/quadris.gif)
+<p align="center">
+   <img src="media/quadris.gif" alt="Demo Animation" width="720"/>
+</p>
+
+Quadris features an authentic scoring system, level progression, and gravity rules, a clean UI, and persistent highscores.
 
 ## Features
 
