@@ -71,4 +71,4 @@ The playfield and UI will automatically scale and center.
 
 ## License
 
-This software is licensed under the [CC BY-NC-SA License](https://creativecommons.org/licenses/by-nc-sa/4.0/).
+This software is licensed under the [GNU General Public License v3.0](https://www.gnu.org/licenses/gpl-3.0.html). See [COPYING](COPYING) for details.
