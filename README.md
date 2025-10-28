@@ -1,9 +1,12 @@
 # Quadris
 
-Tetris clone inspired by the NES version.
+**NES Tetris Clone**
+
+> Maurits Lam  
+> 2025
 
 <p align="center">
-   <img src="media/quadris.gif" alt="Demo Animation" width="720"/>
+   <img src="media/quadris.gif" alt="Demo Animation" height="400"/>
 </p>
 
 Quadris features an authentic scoring system, level progression, and gravity rules, a clean UI, and persistent highscores.
@@ -72,3 +75,4 @@ The playfield and UI will automatically scale and center.
 ## License
 
 This software is licensed under the [GNU General Public License v3.0](https://www.gnu.org/licenses/gpl-3.0.html). See [COPYING](COPYING) for details.
+
